@@ -1,21 +1,16 @@
 library(tidyverse)
-library(magrittr)
 library(fs)
-library(purrr)
-library(readxl)
-library(tidyr)
 library(FactoMineR)
 
 #Read IRR and node summary files
-setwd("/Users/ncnelson/Box Sync/Reproducibility Project/NVivo article analysis/Correspondence analysis/Inputs")
-IRR_files <- dir_ls("IRR files") #create list of all files in the IRR data folder
-summary_files <- dir_ls("Node summary files") #create list of all files in node summary data folder
+IRR_files <- dir_ls("Data/IRR files") #create list of all files in the IRR data folder
+summary_files <- dir_ls("Data/Node summary files") #create list of all files in node summary data folder
 
 #Create IRR data frame
 df_IRR <- IRR_files %>%
   map_dfr(read_csv, .id = "rater") %>% #read in every file; add "rater" variable based on file name
   select(Name, rater, Kappa) %>% #select three relevant variables
-  mutate(rater = str_sub(rater, start = 11, end = -15)) %>% #fix name of "rater"
+  mutate(rater = str_sub(rater, start = 16, end = -15)) %>% #fix name of "rater"
   filter(!grepl(":", Name)) %>% #remove IRR scores for individual articles, leaving only node summary scores
   pivot_wider(names_from = "rater", values_from = "Kappa") %>% #switch to wide data format
   mutate(Name = str_extract(Name, "[^\\\\.]+$")) %>% #fix name of nodes
@@ -25,7 +20,7 @@ df_IRR <- IRR_files %>%
   arrange(Ave_Kappa) #sort by average Kappa
 
 #Create metadata data frame
-df_metadata <- read.csv("Metadata 2020-01-30.csv")
+df_metadata <- read.csv("Data/Metadata 2020-01-30.csv")
 
 #Create coverage data frame
 df_coverage <- summary_files %>%
