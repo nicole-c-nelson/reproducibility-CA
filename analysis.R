@@ -1,6 +1,8 @@
 library(tidyverse)
 library(fs)
+library(readxl)
 library(FactoMineR)
+
 
 #Read IRR and node summary files
 IRR_files <- dir_ls("Data/IRR files") #create list of all files in the IRR data folder
@@ -26,14 +28,14 @@ df_metadata <- read.csv("Data/Metadata 2020-01-30.csv")
 df_coverage <- summary_files %>%
   map_dfr(read_xlsx, .id = "node") %>% #read in every file; add "node" variable based on file name
   select(node, Name, Coverage) %>% #select 3 relevant variables
-  mutate(node = str_sub(node, start = 20, end = -6)) %>% #fix name of nodes
+  mutate(node = str_sub(node, start = 25, end = -6)) %>% #fix name of nodes
   pivot_wider(names_from = "node", values_from = "Coverage", values_fill = list(Coverage = 0)) #switch to wide data format; fill empty cells with 0
 
 #Create count data frame
 df_count <- summary_files %>%
   map_dfr(read_xlsx, .id = "node") %>% #read in every file; add "node" variable based on file name
   select(node, Name, References) %>% #select 3 relevant variables
-  mutate(node = str_sub(node, start = 20, end = -6)) %>% #fix name of nodes
+  mutate(node = str_sub(node, start = 25, end = -6)) %>% #fix name of nodes
   pivot_wider(names_from = "node", values_from = "References", values_fill = list(References = 0)) #switch to wide data format; fill empty cells with 0
 
 #Use IRR scores to select nodes from the coverage and count data frames
