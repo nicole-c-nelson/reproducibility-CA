@@ -22,7 +22,26 @@ df_IRR <- IRR_files %>%
   arrange(Ave_Kappa) #sort by average Kappa
 
 #Create metadata data frame
-df_metadata <- read.csv("Data/Metadata 2020-01-30.csv")
+df_metadata <- read.csv("Data/Metadata 2020-01-30.csv") %>%
+  rename(Name = X)
+
+df_metadata %>%
+  mutate(Audience = df_metadata$T...Reference.aaAudience...Scientific.audience, case_when(> 0 ~ "scientific audience")
+
+df_metadata <- df_metadata %>%
+  mutate_at(vars(matches("T...Reference")), 
+            list(~case_when(. > 0 ~ "scientific audience"))) %>%
+  mutate_at(vars(matches("U...Reference")),
+            list(~case_when(. > 0 ~ "popular audience")))
+
+df_metadata_2 <- gather(df_metadata, 'T...Reference.aaAudience...Scientific.audience', 
+                        'U...Reference.aaAudience...Popular.audience', 
+                        key = "audience", value = "audience.score")
+  
+mutate_at(vars(matches("Scientific.audience")), 
+            list(~case_when(. > 0 ~ "scientific audience")))
+  
+  
 
 #Create coverage data frame
 df_coverage <- summary_files %>%
