@@ -26,17 +26,25 @@ df_metadata <- read.csv("Data/Metadata 2020-01-30.csv") %>%
   rename(Name = X)
 
 ###Data prep for metadata
-## fix column names for the publication year columns
+## fix column names 
 # get vector of current column names
 n <- names(df_metadata)
 
+# fix year columns
 # detect elements that have four digits in a row, then replace with those four digits
 n2 <- ifelse(str_detect(n, "[[:digit:]]{4}") == TRUE, #test condition
              str_extract(n, "[[:digit:]]{4}"), #yes: extract those 4 digits
              n) #no: don't change the element
 
+
+#remove the junk in front of the other column names
+n3 <- ifelse(str_detect(n2, "\\.{3}.+$") == TRUE, #test condition: has ...
+       str_extract(n2, "(?<=aa(Terms|Audience|Journalist)\\.{3}).*"), #yes: extract those 4 digits
+       n2) #no: don't change the element
+
+
 #assign new column names back to df_metadata
-colnames(df_metadata) <- n2
+colnames(df_metadata) <- n3
 
 #fix article name column
 df_metadata <- df_metadata %>% 
@@ -54,6 +62,15 @@ df2 <- df_metadata %>%
   drop_na(value) %>% #drop rows that have a value of NA
   select(-value) #drop value column
 
+df3 <-  df2 %>% 
+  pivot_longer(2:3, 
+               names_to = "audience", 
+               values_to = "codes",
+               names_prefix = ) %>% 
+  mutate(audience = case_when(audience != 0 ~ 1))
+
+df2 %>% 
+  pivot
 
 df_metadata %>%
   mutate(Audience = df_metadata$T...Reference.aaAudience...Scientific.audience, case_when(> 0 ~ "scientific audience")
