@@ -23,7 +23,73 @@ df_IRR <- IRR_files %>%
   arrange(Ave_Kappa) #sort by average Kappa
 
 #Create metadata data frame
-df_metadata <- read.csv("Data/Metadata 2020-01-30.csv")
+df_metadata <- read.csv("Data/Metadata 2020-01-30.csv") %>%
+  rename(Name = X)
+
+###Data prep for metadata
+## fix column names 
+# get vector of current column names
+n <- names(df_metadata)
+
+# fix year columns
+# detect elements that have four digits in a row, then replace with those four digits
+n2 <- ifelse(str_detect(n, "[[:digit:]]{4}") == TRUE, #test condition
+             str_extract(n, "[[:digit:]]{4}"), #yes: extract those 4 digits
+             n) #no: don't change the element
+
+
+#remove the junk in front of the other column names
+n3 <- ifelse(str_detect(n2, "\\.{3}.+$") == TRUE, #test condition: has ...
+       str_extract(n2, "(?<=aa(Terms|Audience|Journalist)\\.{3}).*"), #yes: extract those 4 digits
+       n2) #no: don't change the element
+
+
+#assign new column names back to df_metadata
+colnames(df_metadata) <- n3
+
+#fix article name column
+df_metadata <- df_metadata %>% 
+  mutate(Name = str_replace(Name, "[[:digit:]]+[[:blank:]]:[[:blank:]]", #replace stuff up front...
+                         "")) #with an empty string
+
+#create column for publication year, complicatedly
+df2 <- df_metadata %>%
+  pivot_longer(cols = matches("[[:digit:]]{4}")) %>% #pivot all column with 4 digits in them
+  mutate(value = replace(name, value == 0, NA)) %>% #replace cells that have 0 with NA
+  drop_na(value) %>% #drop NAs in value
+  pivot_wider() %>% #pivot to wide 
+  pivot_longer(cols = matches("[[:digit:]]{4}"), #pivot columns with year
+               names_to = "year") %>% #into a new "year" column
+  drop_na(value) %>% #drop rows that have a value of NA
+  select(-value) #drop value column
+
+df3 <-  df2 %>% 
+  pivot_longer(2:3, 
+               names_to = "audience", 
+               values_to = "codes",
+               names_prefix = ) %>% 
+  mutate(audience = case_when(audience != 0 ~ 1))
+
+df2 %>% 
+  pivot
+
+df_metadata %>%
+  mutate(Audience = df_metadata$T...Reference.aaAudience...Scientific.audience, case_when(> 0 ~ "scientific audience")
+
+df_metadata <- df_metadata %>%
+  mutate_at(vars(matches("T...Reference")), 
+            list(~case_when(. > 0 ~ "scientific audience"))) %>%
+  mutate_at(vars(matches("U...Reference")),
+            list(~case_when(. > 0 ~ "popular audience")))
+
+df_metadata_2 <- gather(df_metadata, 'T...Reference.aaAudience...Scientific.audience', 
+                        'U...Reference.aaAudience...Popular.audience', 
+                        key = "audience", value = "audience.score")
+  
+mutate_at(vars(matches("Scientific.audience")), 
+            list(~case_when(. > 0 ~ "scientific audience")))
+  
+  
 
 ###Data prep for metadata
 ## fix column names for the publication year columns
