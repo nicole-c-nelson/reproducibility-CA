@@ -1,6 +1,7 @@
 library(tidyverse)
 library(fs)
 library(FactoMineR)
+library(readxl)
 
 #Read IRR and node summary files
 IRR_files <- dir_ls("Data/IRR files") #create list of all files in the IRR data folder
@@ -26,14 +27,14 @@ df_metadata <- read.csv("Data/Metadata 2020-01-30.csv")
 df_coverage <- summary_files %>%
   map_dfr(read_xlsx, .id = "node") %>% #read in every file; add "node" variable based on file name
   select(node, Name, Coverage) %>% #select 3 relevant variables
-  mutate(node = str_sub(node, start = 20, end = -6)) %>% #fix name of nodes
+  mutate(node = str_sub(node, start = 25, end = -6)) %>% #fix name of nodes
   pivot_wider(names_from = "node", values_from = "Coverage", values_fill = list(Coverage = 0)) #switch to wide data format; fill empty cells with 0
 
 #Create count data frame
 df_count <- summary_files %>%
   map_dfr(read_xlsx, .id = "node") %>% #read in every file; add "node" variable based on file name
   select(node, Name, References) %>% #select 3 relevant variables
-  mutate(node = str_sub(node, start = 20, end = -6)) %>% #fix name of nodes
+  mutate(node = str_sub(node, start = 25, end = -6)) %>% #fix name of nodes
   pivot_wider(names_from = "node", values_from = "References", values_fill = list(References = 0)) #switch to wide data format; fill empty cells with 0
 
 #Use IRR scores to select nodes from the coverage and count data frames
@@ -41,23 +42,18 @@ df_IRR_2 <- df_IRR %>%
   select(Name, Ave_Kappa) %>% #select node name and average kappa score
   filter(Ave_Kappa >= 0.60) %>% #select all nodes reaching the IRR threshold
   pivot_wider(names_from = Name, values_from = Ave_Kappa) %>% #pivot so that node names become the variables rather than the rows
-  select(-starts_with("Overall")) #get rid of overall average Kappa score as a variable
-
-df_IRR_2$Name <- NA #add a blank column to this data frame to match up with the "Name" variable in the count and coverage data frames
+  select(-starts_with("Overall")) %>% #get rid of overall average Kappa score as a variable
+  mutate(Name = NA)  #add a blank column to this data frame to match up with the "Name" variable in the count and coverage data frames
 
 df_count_2 <- df_count %>% 
   select(colnames(df_IRR_2)) %>% #select nodes matching those in the filtered IRR table
   select(Name, everything()) %>% #put name column first
   column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
 
-write_csv(df_count_2, "Count_matrix_2020-01-30.csv")
-
 df_coverage_2 <- df_coverage %>%
   select(colnames(df_IRR_2)) %>% #select nodes matching those in the filtered IRR table
   select(Name, everything()) %>% #put name column first
   column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
-
-write_csv(df_coverage_2, "Coverage_matrix_2020-01-30.csv")
 
 #Correspondence analysis
 CA_count <- CA(df_count_2, graph = F, ncp = ncol(df_count_2))
