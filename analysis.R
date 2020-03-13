@@ -2,7 +2,8 @@ library(tidyverse)
 library(fs)
 library(readxl)
 library(FactoMineR)
-library(readxl)
+library(Factoshiny)
+library(FactoInvestigate)
 
 
 #Read IRR and node summary files
@@ -122,6 +123,22 @@ df_coverage_2 <- df_coverage %>%
   select(colnames(df_IRR_2)) %>% #select nodes matching those in the filtered IRR table
   select(Name, everything()) %>% #put name column first
   column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
+
+#FactoShiny CA
+Factoshiny(df_coverage_2)
+
+res.CA <- CA(df_coverage_2,graph=FALSE)
+
+plot.CA(res.CA,selectCol='cos2 0.1',unselect=0,habillage='cos2',invisible=c('row'))
+plot.CA(res.CA,axes=c(1,3),selectCol='cos2 0.1',unselect=0,habillage='cos2',invisible=c('row'))
+plot.CA(res.CA,axes=c(3,4),selectCol='cos2 0.1',unselect=0,habillage='cos2',invisible=c('row'))
+res.CA<-CA(df_coverage_2,graph=FALSE)
+plot.CA(res.CA,selectCol='cos2 0.1', selectRow='cos2 0.55',
+        unselect=0,cex=0.65,cex.main=0.65,cex.axis=0.65,habillage='cos2')
+plot.CA(res.CA,axes=c(1,3),selectCol='cos2 0.1',selectRow='cos2 0.75',
+        unselect=0,cex=0.65,cex.main=0.65,cex.axis=0.65,habillage='cos2')
+
+Investigate(res.CA)
 
 #Correspondence analysis
 CA_count <- CA(df_count_2, graph = F, ncp = ncol(df_count_2))
