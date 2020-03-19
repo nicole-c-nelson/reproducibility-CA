@@ -3,8 +3,6 @@ library(fs)
 library(readxl)
 library(FactoMineR)
 library(Factoshiny)
-library(FactoInvestigate)
-
 
 
 #Read IRR and node summary files
@@ -25,7 +23,7 @@ df_IRR <- IRR_files %>%
   arrange(Ave_Kappa) #sort by average Kappa
 
 #Create metadata data frame
-df_metadata <- read.csv("Data/Metadata 2020-01-30.csv") %>%
+df_metadata <- read.csv("Data/Metadata 2020-03-19.csv") %>%
   rename(Name = X)
 
 ###Data prep for metadata
@@ -39,19 +37,16 @@ n2 <- ifelse(str_detect(n, "[[:digit:]]{4}") == TRUE, #test condition
              str_extract(n, "[[:digit:]]{4}"), #yes: extract those 4 digits
              n) #no: don't change the element
 
-
 #remove the junk in front of the other column names
 n3 <- ifelse(str_detect(n2, "\\.{3}.+$") == TRUE, #test condition: has ...
        str_extract(n2, "(?<=aa(Terms|Audience|Journalist)\\.{3}).*"), #yes: extract those 4 digits
        n2) #no: don't change the element
 
-
 #assign new column names back to df_metadata
 colnames(df_metadata) <- n3
 
-
 #create column for publication year, complicatedly
-df2 <- df_metadata %>%
+df_metadata_2 <- df_metadata %>%
   pivot_longer(cols = matches("[[:digit:]]{4}")) %>% #pivot all column with 4 digits in them
   mutate(value = replace(name, value == 0, NA)) %>% #replace cells that have 0 with NA
   drop_na(value) %>% #drop NAs in value
@@ -62,7 +57,7 @@ df2 <- df_metadata %>%
   select(-value) #drop value column
 
 #create variable for audience
-df3 <-  df2 %>% 
+df_metadata_3 <-  df_metadata_2 %>% 
   pivot_longer(2:3) %>% #pivot the two audience variables
   mutate(value = replace(name, value == 0, NA)) %>% #replace cells that have 0 with NA
   drop_na(value) %>%
@@ -70,7 +65,7 @@ df3 <-  df2 %>%
   rename(audience = name)
 
 #create variable for journalist/not journalist
-df4 <- df3 %>% 
+df_metadata_4 <- df_metadata_3 %>% 
   pivot_longer(2:3) %>% 
   mutate(value = replace(name, value == 0, NA)) %>% #replace cells that have 0 with NA
   drop_na(value) %>%
@@ -78,19 +73,30 @@ df4 <- df3 %>%
   rename(journalist = name)
 
 #create variable for topic
-df5 <- df4 %>% 
-  pivot_longer(2:42) %>% 
+df_metadata_5 <- df_metadata_4 %>% 
+  pivot_longer(2:46) %>% 
   mutate(value = replace(name, value == 0, NA)) %>% #replace cells that have 0 with NA
   drop_na(value) %>%
   select(-value) %>% 
   rename(topic = name)
 
-#list name of articles that have missing metadata
-df2 %>% 
-  anti_join(df5, by = "Name") %>% 
+#check for articles that have missing metadata
+df_metadata_2 %>% 
+  anti_join(df_metadata_5, by = "Name") %>% 
   select(Name)
 
-
+#create variable for reproducibility/replication
+df_metadata_6 <- df_metadata_5 %>%
+  mutate(
+    repro_repli = case_when(
+      topic == "Reproducibility" ~ "reproducibility",
+      topic == "Reproducibility.crisis" ~ "reproducibility",
+      topic == "Irreproducibility" ~ "reproducibility",
+      topic == "Data.reproducibility.crisis" ~ "reproducibility",
+      topic == "Replication.replicability" ~ "replication",
+      topic == "Replication.crisis" ~ "replication",
+      topic == "Replicability.Crisis" ~ "replication",
+      TRUE ~ "other"))
 
 #Create coverage data frame
 df_coverage <- summary_files %>%
@@ -99,14 +105,7 @@ df_coverage <- summary_files %>%
   mutate(node = str_sub(node, start = 25, end = -6)) %>% #fix name of nodes
   pivot_wider(names_from = "node", values_from = "Coverage", values_fill = list(Coverage = 0)) #switch to wide data format; fill empty cells with 0
 
-#Create count data frame
-df_count <- summary_files %>%
-  map_dfr(read_xlsx, .id = "node") %>% #read in every file; add "node" variable based on file name
-  select(node, Name, References) %>% #select 3 relevant variables
-  mutate(node = str_sub(node, start = 25, end = -6)) %>% #fix name of nodes
-  pivot_wider(names_from = "node", values_from = "References", values_fill = list(References = 0)) #switch to wide data format; fill empty cells with 0
-
-#Use IRR scores to select nodes from the coverage and count data frames
+#Use IRR scores to select nodes from the coverage frame
 df_IRR_2 <- df_IRR %>%
   select(Name, Ave_Kappa) %>% #select node name and average kappa score
   filter(Ave_Kappa >= 0.60) %>% #select all nodes reaching the IRR threshold
@@ -114,15 +113,14 @@ df_IRR_2 <- df_IRR %>%
   select(-starts_with("Overall")) %>% #get rid of overall average Kappa score as a variable
   mutate(Name = NA)  #add a blank column to this data frame to match up with the "Name" variable in the count and coverage data frames
 
-df_count_2 <- df_count %>% 
-  select(colnames(df_IRR_2)) %>% #select nodes matching those in the filtered IRR table
-  select(Name, everything()) %>% #put name column first
-  column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
-
 df_coverage_2 <- df_coverage %>%
   select(colnames(df_IRR_2)) %>% #select nodes matching those in the filtered IRR table
   select(Name, everything()) %>% #put name column first
   column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
+
+#join metadata to coverage dataframe
+df_coverage_3 <- df_coverage_2 %>%
+  
 
 #FactoShiny CA
 Factoshiny(df_coverage_2)
@@ -173,6 +171,18 @@ dev.off()
 
 
 #Code graveyard below! Stuff that I'm not using for now
+
+#Create count data frame
+df_count <- summary_files %>%
+  map_dfr(read_xlsx, .id = "node") %>% #read in every file; add "node" variable based on file name
+  select(node, Name, References) %>% #select 3 relevant variables
+  mutate(node = str_sub(node, start = 25, end = -6)) %>% #fix name of nodes
+  pivot_wider(names_from = "node", values_from = "References", values_fill = list(References = 0)) #switch to wide data format; fill empty cells with 0
+
+df_count_2 <- df_count %>% 
+  select(colnames(df_IRR_2)) %>% #select nodes matching those in the filtered IRR table
+  select(Name, everything()) %>% #put name column first
+  column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
 
 #Calculating IRR
 #Reading IRR files from NVivo
