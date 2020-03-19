@@ -22,9 +22,15 @@ df_IRR <- IRR_files %>%
   mutate_if(is.numeric, round, 2) %>% #round to two decimal places
   arrange(Ave_Kappa) #sort by average Kappa
 
-#Create metadata data frame
+#Create metadata data frame and clean up Name column
 df_metadata <- read.csv("Data/Metadata 2020-03-19.csv") %>%
-  rename(Name = X)
+  rename(Name = X) %>% 
+  mutate(Name = str_replace(df_metadata$Name, 
+                            "[0-9]*[:blank:]\\:[:blank:]", 
+                            ""))
+
+
+ 
 
 ###Data prep for metadata
 ## fix column names 
@@ -85,6 +91,19 @@ df_metadata_2 %>%
   anti_join(df_metadata_5, by = "Name") %>% 
   select(Name)
 
+# alternative way to consolidate the factor levels of the topic column
+# df_metadata_5 %>% 
+#   mutate(topic = fct_collapse(topic, 
+#                "reproducibility" = c("Reproducibility", 
+#                                      "Reproducibility.crisis", 
+#                                      "Irreproducibility", 
+#                                      "Data.reproducibility.crisis"),
+#                "replication" = c("Replication.replicability",
+#                                  "Replication.crisis",
+#                                  "Replicability.Crisis"),
+#                other_level = "other"))
+# 
+
 #create variable for reproducibility/replication
 df_metadata_6 <- df_metadata_5 %>%
   mutate(
@@ -97,6 +116,18 @@ df_metadata_6 <- df_metadata_5 %>%
       topic == "Replication.crisis" ~ "replication",
       topic == "Replicability.Crisis" ~ "replication",
       TRUE ~ "other"))
+
+df_metadata_5 %>% 
+  fct_collapse(topic, 
+  "reproducibility" = c("Reproducibility", 
+                        "Reproducibility.crisis", 
+                        "Irreproducibility", 
+                        "Data.reproducibility.crisis"),
+  "replication" = c("Replication.replicability",
+                    "Replication.crisis",
+                    "Replicability.Crisis"),
+  other_level = "other")
+  
 
 #Create coverage data frame
 df_coverage <- summary_files %>%
