@@ -24,13 +24,12 @@ df_IRR <- IRR_files %>%
 
 #Create metadata data frame and clean up Name column
 df_metadata <- read.csv("Data/Metadata 2020-03-19.csv") %>%
-  rename(Name = X) %>% 
+  rename(Name = X)
+
+df_metadata <- df_metadata %>% 
   mutate(Name = str_replace(df_metadata$Name, 
                             "[0-9]*[:blank:]\\:[:blank:]", 
                             ""))
-
-
- 
 
 ###Data prep for metadata
 ## fix column names 
@@ -117,18 +116,6 @@ df_metadata_6 <- df_metadata_5 %>%
       topic == "Replicability.Crisis" ~ "replication",
       TRUE ~ "other"))
 
-df_metadata_5 %>% 
-  fct_collapse(topic, 
-  "reproducibility" = c("Reproducibility", 
-                        "Reproducibility.crisis", 
-                        "Irreproducibility", 
-                        "Data.reproducibility.crisis"),
-  "replication" = c("Replication.replicability",
-                    "Replication.crisis",
-                    "Replicability.Crisis"),
-  other_level = "other")
-  
-
 #Create coverage data frame
 df_coverage <- summary_files %>%
   map_dfr(read_xlsx, .id = "node") %>% #read in every file; add "node" variable based on file name
@@ -146,53 +133,28 @@ df_IRR_2 <- df_IRR %>%
 
 df_coverage_2 <- df_coverage %>%
   select(colnames(df_IRR_2)) %>% #select nodes matching those in the filtered IRR table
-  select(Name, everything()) %>% #put name column first
-  column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
+  select(Name, everything())
 
 #join metadata to coverage dataframe
-df_coverage_3 <- df_coverage_2 %>%
-  
+df_coverage_3 <- inner_join(df_coverage_2, df_metadata_6, by = "Name")
 
-#FactoShiny CA
-Factoshiny(df_coverage_2)
+#set article names to row names for FactomineR analysis
+df_coverage_4 <- df_coverage_3 %>%
+  column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
 
-res.CA <- CA(df_coverage_2,graph=FALSE)
+#Correspondence analysis with FactomineR
 
-plot.CA(res.CA,selectCol='cos2 0.1',unselect=0,habillage='cos2',invisible=c('row'))
-plot.CA(res.CA,axes=c(1,3),selectCol='cos2 0.1',unselect=0,habillage='cos2',invisible=c('row'))
-plot.CA(res.CA,axes=c(3,4),selectCol='cos2 0.1',unselect=0,habillage='cos2',invisible=c('row'))
-res.CA<-CA(df_coverage_2,graph=FALSE)
-plot.CA(res.CA,selectCol='cos2 0.1', selectRow='cos2 0.55',
-        unselect=0,cex=0.65,cex.main=0.65,cex.axis=0.65,habillage='cos2')
-plot.CA(res.CA,axes=c(1,3),selectCol='cos2 0.1',selectRow='cos2 0.75',
-        unselect=0,cex=0.65,cex.main=0.65,cex.axis=0.65,habillage='cos2')
+Factoshiny(df_coverage_4) #open FactoShiny interface
 
-Investigate(res.CA)
+res.CA <- CA(df_coverage_4, quali.sup = c(30,31,32,33,34), graph = FALSE) #perform CA with qualitative variables labelled as supplementary
 
-#Correspondence analysis
-CA_count <- CA(df_count_2, graph = F, ncp = ncol(df_count_2))
-CA_coverage <- CA(df_coverage_2, graph = F, ncp = ncol(df_coverage_2))
+summary.CA(res.CA, nbelements = Inf, ncp = 4, file = "Outputs/CA_summary.txt") #output CA summary result as a text file
 
-#Plot codes latent dimensions 1 and 2, xlab and ylab %s manual for now
-setwd("/Users/ncnelson/Box Sync/Reproducibility Project/NVivo article analysis/Correspondence analysis")
+Investigate(res.CA) #generate automatic CA report
 
-pdf("codes_latent_dimensions_1_2 (count) 2020-01-30.pdf", width = 10, height = 10)
-plot(-CA_count$col$coord[,1], CA_count$col$coord[,2], asp = 1, pch = 3, 
-     xlab = "Dim 1",
-     ylab = "Dim 2")
-text(-CA_count$col$coord[,1] + .01, CA_count$col$coord[,2] + .02, 
-     labels = rownames(CA_count$col$coord), 
-     adj = 0, cex = .4)
-dev.off()
 
-pdf("codes_latent_dimensions_1_2 (coverage) 2020-01-30.pdf", width = 10, height = 10)
-plot(-CA_coverage$col$coord[,1], CA_coverage$col$coord[,2], asp = 1, pch = 3, 
-     xlab = "Dim 1",
-     ylab = "Dim 2")
-text(-CA_coverage$col$coord[,1] + .01, CA_coverage$col$coord[,2] + .02, 
-     labels = rownames(CA_coverage$col$coord), 
-     adj = 0, cex = .4)
-dev.off()
+
+
 
 
 
@@ -314,6 +276,10 @@ coding_matrix_4 <- select(coding_matrix_3, -starts_with("Intrinsic"),
 install.packages("FactoMineR")
 library(FactoMineR)
 corresp_analysis <- CA(coding_matrix_3, graph = F, ncp = ncol(coding_matrix_3))
+
+#Correspondence analysis
+CA_count <- CA(df_count_2, graph = F, ncp = ncol(df_count_2))
+CA_coverage <- CA(df_coverage_2, graph = F, ncp = ncol(df_coverage_2))
 
 #Scree plot. Second column is percentage variance
 pdf("scree_plot (count with auto) 2019-11-06.pdf", width = 10, height = 7.5)

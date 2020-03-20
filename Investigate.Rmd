@@ -1,0 +1,18 @@
+---
+title: 'Correspondence Analysis'
+author: 'Dataset df_coverage_4'
+output:
+  html_document: default
+---
+This dataset contains 356 rows and 29 columns, 5 additional variables are qualitative and considered as illustrative.
+
+- - -
+
+```{r, echo = FALSE}
+library(FactoMineR)
+load('/Users/NicoleNelsonWork/reproducibility-CA/Workspace.RData')
+```
+### 1. Study of the outliers
+The detection of outliers does not apply to CA results.
+
+### 2. Inertia distribution
