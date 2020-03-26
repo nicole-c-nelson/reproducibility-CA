@@ -133,7 +133,7 @@ df_IRR_2 <- df_IRR %>%
 
 df_coverage_2 <- df_coverage %>%
   select(colnames(df_IRR_2)) %>% #select nodes matching those in the filtered IRR table
-  select(Name, everything())
+  select(Name, everything()) 
 
 #join metadata to coverage dataframe
 df_coverage_3 <- inner_join(df_coverage_2, df_metadata_6, by = "Name")
@@ -144,17 +144,49 @@ df_coverage_4 <- df_coverage_3 %>%
 
 #Correspondence analysis with FactomineR
 
-Factoshiny(df_coverage_4) #open FactoShiny interface
+Factoshiny(df_coverage_4)
+
+result_CA_coverage <- Factoshiny(df_coverage_4) #open FactoShiny interface
 
 res.CA <- CA(df_coverage_4, quali.sup = c(30,31,32,33,34), graph = FALSE) #perform CA with qualitative variables labelled as supplementary
 
 summary.CA(res.CA, nbelements = Inf, ncp = 4, file = "Outputs/CA_summary.txt") #output CA summary result as a text file
+#there should be a better way of saving this as an object, I just haven't figured it out yet
 
-Investigate(res.CA) #generate automatic CA report
+Investigate(res.CA) #generate automatic CA report; doesn't work yet
 
+#create subsets for popular/scientific
+df_coverage_sci <- df_coverage_3 %>%
+  filter(audience == "Scientific.audience") %>% #select articles aimed at a scientific audience
+  column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
 
+df_coverage_pop <- df_coverage_3 %>%
+  filter(audience == "Popular.audience") %>% # select articles aimed at a popular audience
+  column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
 
+Factoshiny(df_coverage_sci)
+Factoshiny(df_coverage_pop)
 
+#create subsets for reproducibility/replication
+df_coverage_repro <- df_coverage_3 %>%
+  filter(repro_repli == "reproducibility") %>% #select articles that use replication
+  column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
+
+df_coverage_repli <- df_coverage_3 %>%
+  filter(repro_repli == "replication") %>% # select articles that use replication
+  column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
+
+Factoshiny(df_coverage_repro)
+Factoshiny(df_coverage_repli)
+
+#create subsets for year
+df_coverage_upto2012 <- df_coverage_3 %>%
+  filter(year < 2013)%>%
+  column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
+
+df_coverage_post2013 <- df_coverage_3 %>%
+  filter(year > 2013)%>%
+  column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
 
 
 
@@ -174,8 +206,16 @@ df_count <- summary_files %>%
 
 df_count_2 <- df_count %>% 
   select(colnames(df_IRR_2)) %>% #select nodes matching those in the filtered IRR table
-  select(Name, everything()) %>% #put name column first
+  select(Name, everything()) #put name column first
+
+#join metadata to coverage dataframe
+df_count_3 <- inner_join(df_count_2, df_metadata_6, by = "Name")
+
+#set article names to row names for FactomineR analysis
+df_count_4 <- df_count_3 %>%
   column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
+
+result_CA_count <- Factoshiny(df_count_4)
 
 #Calculating IRR
 #Reading IRR files from NVivo
