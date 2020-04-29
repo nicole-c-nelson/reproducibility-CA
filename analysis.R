@@ -3,13 +3,17 @@ library(fs)
 library(readxl)
 library(FactoMineR)
 library(Factoshiny)
+library(ggplot2)
+library(viridis)
+library(ggridges)
 
 
-#Read IRR and node summary files
+##Read IRR and node summary files
 IRR_files <- dir_ls("Data/IRR files") #create list of all files in the IRR data folder
 summary_files <- dir_ls("Data/Node summary files") #create list of all files in node summary data folder
 
-#Create IRR data frame
+
+##Create IRR data frame
 df_IRR <- IRR_files %>%
   map_dfr(read_csv, .id = "rater") %>% #read in every file; add "rater" variable based on file name
   select(Name, rater, Kappa) %>% #select three relevant variables
@@ -22,7 +26,9 @@ df_IRR <- IRR_files %>%
   mutate_if(is.numeric, round, 2) %>% #round to two decimal places
   arrange(Ave_Kappa) #sort by average Kappa
 
-#Create metadata data frame and clean up Name column
+
+##Create metadata data frame
+#Create initial metadata data frame and clean up Name column
 df_metadata <- read.csv("Data/Metadata 2020-03-19.csv") %>%
   rename(Name = X)
 
@@ -31,8 +37,7 @@ df_metadata <- df_metadata %>%
                             "[0-9]*[:blank:]\\:[:blank:]", 
                             ""))
 
-###Data prep for metadata
-## fix column names 
+# fix column names 
 # get vector of current column names
 n <- names(df_metadata)
 
@@ -116,7 +121,8 @@ df_metadata_6 <- df_metadata_5 %>%
       topic == "Replicability.Crisis" ~ "replication",
       TRUE ~ "other"))
 
-#Create coverage data frame
+
+##Create coverage data frame
 df_coverage <- summary_files %>%
   map_dfr(read_xlsx, .id = "node") %>% #read in every file; add "node" variable based on file name
   select(node, Name, Coverage) %>% #select 3 relevant variables
@@ -138,24 +144,130 @@ df_coverage_2 <- df_coverage %>%
 #join metadata to coverage dataframe
 df_coverage_3 <- inner_join(df_coverage_2, df_metadata_6, by = "Name")
 
+df_coverage_3 %>%
+  filter(year <2016, `2016 Nature survey` > 0)
+
 #set article names to row names for FactomineR analysis
 df_coverage_4 <- df_coverage_3 %>%
   column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
 
-#Correspondence analysis with FactomineR
 
-Factoshiny(df_coverage_4)
+##Analysis with FactomineR
+Factoshiny(df_coverage_4) #open FactoShiny interface
 
-result_CA_coverage <- Factoshiny(df_coverage_4) #open FactoShiny interface
+#Correspondence analysis
+coverage_CA_result <- CA(df_coverage_4, #perform CA
+                         quali.sup = c(30,31,32,33,34), #define qualitative variables as supplementary
+                         ncp=18, #retain first 18 dimensions (for later clustering)
+                         graph = FALSE) 
+show(coverage_CA_result$eig)
 
-res.CA <- CA(df_coverage_4, quali.sup = c(30,31,32,33,34), graph = FALSE) #perform CA with qualitative variables labelled as supplementary
+#Investigate(coverage_CA_result) #generate automatic CA report; doesn't work
+#summary_coverage_CA <- summary.CA(coverage_CA_result, nbelements = Inf, ncp = 5) #output CA summary result, makes a messy object that I'm not sure how to deal with
 
-summary.CA(res.CA, nbelements = Inf, ncp = 4, file = "Outputs/CA_summary.txt") #output CA summary result as a text file
-#there should be a better way of saving this as an object, I just haven't figured it out yet
+dimdesc_1_4 <- dimdesc(coverage_CA_result, axes = 1:4, proba = 0.01) #create dimension descriptions
 
-Investigate(res.CA) #generate automatic CA report; doesn't work yet
+show(dimdesc_1_4$"Dim 2"$quali) #output dimension descriptions
+show(dimdesc_1_4$"Dim 2"$category)
 
-#create subsets for popular/scientific
+#Clustering
+coverage_HCPC_result <- HCPC(coverage_CA_result, nb.clust=4, consol=TRUE, graph=FALSE) #perform clustering
+
+
+##Plot for first factor plane uwsing FactoMineR functions
+plot.CA(coverage_CA_result, axes = c(1, 2), #plot first two dimensions
+        selectCol='contrib 8', #label only the 8 most contributing nodes
+        label = "col", #label only the nodes
+        invisible = c("quali.sup"), #make the supplementary variables invisible
+        habillage = "repro_repli", #color the articles according to the repro_repli variable
+        col.col = "chartreuse4", 
+        palette=palette(c("black","red","blue")), #
+        graph.type = c("ggplot"),
+        title = "Coverage Dim 1/2; eight most contributing nodes"
+        )
+
+##Extract data from the CA and clustering objects to use for ggplot
+article_coord_1 <- coverage_CA_result$row$coord[,1]
+article_coord_2 <- coverage_CA_result$row$coord[,2]
+article_coord_3 <- coverage_CA_result$row$coord[,3]
+article_coord_4 <- coverage_CA_result$row$coord[,4]
+article_labels <- rownames(coverage_CA_result$row$coord)
+
+node_coord_1 <- coverage_CA_result$col$coord[,1]
+node_coord_2 <- coverage_CA_result$col$coord[,2]
+node_coord_3 <- coverage_CA_result$col$coord[,3]
+node_coord_4 <- coverage_CA_result$col$coord[,4]
+node_contrib_1 <- coverage_CA_result$col$contrib[,1]
+node_contrib_2 <- coverage_CA_result$col$contrib[,2]
+node_contrib_3 <- coverage_CA_result$col$contrib[,3]
+node_contrib_4 <- coverage_CA_result$col$contrib[,4]
+node_labels <- rownames(coverage_CA_result$col$coord)
+
+article_coord <- data.frame("Dim_1" = article_coord_1, 
+                            "Dim_2" = article_coord_2,
+                            "Dim_3" = article_coord_3,
+                            "Dim_4" = article_coord_4) %>%
+  `rownames<-`(article_labels) %>%
+  rownames_to_column(var = "Name")
+
+node_coord <- data.frame("Dim_1" = node_coord_1, 
+                         "Dim_2" = node_coord_2,
+                         "Dim_3" = node_coord_3,
+                         "Dim_4" = node_coord_4,
+                         "Contrib_1" = node_contrib_1, 
+                         "Contrib_2" = node_contrib_2,
+                         "Contrib_3" = node_contrib_3,
+                         "Contrib_4" = node_contrib_4) %>%
+  `rownames<-`(node_labels) %>%
+  rownames_to_column(var = "Name") %>%
+  mutate("Contrib_1_2" = Contrib_1 + Contrib_2) %>%
+  mutate("Contrib_3_4" = Contrib_3 + Contrib_4)
+
+HCPC_labels <- rownames(coverage_HCPC_result$data.clust)
+coverage_HCPC_clusters <- as_tibble(coverage_HCPC_result$data.clust) %>%
+  `rownames<-`(HCPC_labels) %>%
+  rownames_to_column(var = "Name") %>%
+  select(Name, clust) 
+
+article_coord_metadata <- inner_join(article_coord, df_metadata_6, by = "Name")
+article_coord_cluster <- inner_join(article_coord, coverage_HCPC_clusters, by = "Name")
+article_coord_metadata_cluster <- inner_join(article_coord_metadata, coverage_HCPC_clusters, by = "Name")
+
+
+##Plot first factor plane using ggplot
+ggplot(article_coord_metadata, aes(Dim_1,Dim_2)) +
+  geom_point(aes(color = repro_repli)) +
+  scale_color_viridis(discrete = TRUE, option = "D") +
+  geom_point(data = node_coord, aes(Dim_1, Dim_2), shape = 3) +
+  geom_label(data = subset(node_coord, Contrib_1_2 > 4), 
+             aes(label = Name),
+             nudge_y = 0.1,
+             label.size = 0.2)
+
+ggplot(article_coord_metadata, aes(Dim_1,Dim_2)) +
+  geom_point(aes(color = repro_repli)) +
+  scale_color_manual(values = c("darkgrey","red", "blue")) +
+  geom_point(data = node_coord, aes(Dim_1, Dim_2), shape = 3) +
+  geom_label(data = subset(node_coord, Contrib_1_2 > 4), 
+             aes(label = Name),
+             nudge_y = 0.1,
+             label.size = 0.2)
+
+
+##Create subsets of data
+#Create subsets for journalist/scientist
+df_coverage_journ <- df_coverage_3 %>%
+  filter(journalist == "Journalist") %>% #select articles written by journalists
+  column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
+
+df_coverage_notjourn <- df_coverage_3 %>%
+  filter(journalist == "Not.a.journalist") %>% # select articles written by scientists
+  column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
+
+Factoshiny(df_coverage_journ)
+Factoshiny(df_coverage_notjourn)
+
+#Create subsets for popular/scientific
 df_coverage_sci <- df_coverage_3 %>%
   filter(audience == "Scientific.audience") %>% #select articles aimed at a scientific audience
   column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
@@ -167,35 +279,97 @@ df_coverage_pop <- df_coverage_3 %>%
 Factoshiny(df_coverage_sci)
 Factoshiny(df_coverage_pop)
 
-#create subsets for reproducibility/replication
-df_coverage_repro <- df_coverage_3 %>%
-  filter(repro_repli == "reproducibility") %>% #select articles that use replication
-  column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
 
-df_coverage_repli <- df_coverage_3 %>%
-  filter(repro_repli == "replication") %>% # select articles that use replication
-  column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
+##Create data frames for MFA
+df_coverage_sorted_by_journ <- df_coverage_3 %>%
+  arrange(journalist) %>%
+  select(-c(31:35)) %>%
+  column_to_rownames(var = "Name")
 
-Factoshiny(df_coverage_repro)
-Factoshiny(df_coverage_repli)
+df_coverage_sorted_by_journ_2 <- data.frame(t(df_coverage_sorted_by_journ))
 
-#create subsets for year
-df_coverage_upto2012 <- df_coverage_3 %>%
-  filter(year < 2013)%>%
-  column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
+Factoshiny(df_coverage_sorted_by_journ_2)
 
-df_coverage_post2013 <- df_coverage_3 %>%
-  filter(year > 2013)%>%
-  column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
+df_coverage_sorted_by_aud <- df_coverage_3 %>%
+  arrange(audience) %>%
+  select(-c(31:35)) %>%
+  column_to_rownames(var = "Name")
+
+df_coverage_sorted_by_aud_2 <- data.frame(t(df_coverage_sorted_by_aud))
+
+Factoshiny(df_coverage_sorted_by_aud_2)
+
+df_coverage_sorted_by_year <- df_coverage_3 %>%
+  arrange(year) %>%
+  select(-c(31:35)) %>%
+  column_to_rownames(var = "Name")
+
+df_coverage_sorted_by_year_2 <- data.frame(t(df_coverage_sorted_by_year))
+
+group_by(df_coverage_3, year) %>%
+  tally()
+
+##Mean article profile by year
+df_mean_article_year <-df_coverage_3 %>%
+  mutate(total_coded = rowSums(.[,2:30])) %>%
+  filter(year > 2011) %>%
+  filter(year < 2019) %>%
+  mutate_at(c(2:30), funs((./total_coded)*100)) %>%
+  group_by(year) %>%
+  summarise_if(is.numeric, mean) %>%
+  select(-c(31)) %>%
+  #select("year","Career costs to scientists", "Economic cost", "Impact on policy or habits", 
+  #       "Legitimacy of science", "Loss of funding") %>%
+  #select("year", "2016 Nature survey", "Amgen or Bayer studies", "Andrew Gelman", 
+  #       "Brian Nosek and COS", "Failure to replicate important findings", "John Ioannidis", 
+  #      "Popular press coverage", "Retractions") %>%
+  #select ("year", "Fraud", "Heterogeneity complexity", "Incentives", 
+  #        "Journals and publishing culture", "P-values", "Peer review", 
+  #       "Reagents", "Sample size and power") %>%
+  select("year", "Bayesian stats", "Governmental or NGO actions", "Incentives", 
+         "Journals and publishing culture", "Meta-science", "P-values", "Peer review",
+         "Pre-registration", "Sample size and power","Training in research methods",
+         "Transparency of data or methodology") %>%
+  #select("year", everything()) %>%
+  gather(-c(1), key = "node", value = "coverage")
+
+
+ggplot(df_mean_article_year,
+       aes(x=year, y=coverage, group=node))+
+  geom_area()+
+  facet_wrap(~node)
+
+ggplot(df_mean_article_year,
+       aes(x=year, y=coverage, group=node, fill=node))+
+  geom_area()
+
+ggplot(df_mean_article_year,
+       aes(x=year, y=coverage, height=coverage, group=node))+
+  geom_ridgeline()+
+  facet_wrap(~node)
+
+ggplot(df_mean_article_year, aes(x=year, y=coverage))+
+  geom_area()+
+  facet_wrap(~node)
+      
+  
+  
+
+
+##MFA for year groupings
+Factoshiny(df_coverage_sorted_by_year_2)
+
+coverage_MFA_year_result <- MFA(df_coverage_sorted_by_year_2,
+             group=c(28,29,23,23,43,62,58,90),
+             type=c('f','f','f','f','f','f','f','f'),
+             name.group=c('Up to 2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018'),
+             num.group.sup=c(),graph=FALSE)
 
 
 
 
 
-
-
-
-#Code graveyard below! Stuff that I'm not using for now
+###Code graveyard below! Stuff that I'm not using for now
 
 #Create count data frame
 df_count <- summary_files %>%
