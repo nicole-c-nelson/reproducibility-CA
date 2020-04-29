@@ -312,7 +312,7 @@ group_by(df_coverage_3, year) %>%
 ##Mean article profile by year
 df_mean_article_year <-df_coverage_3 %>%
   mutate(total_coded = rowSums(.[,2:30])) %>%
-  filter(year > 2011) %>%
+  filter(year > 2010) %>%
   filter(year < 2019) %>%
   mutate_at(c(2:30), funs((./total_coded)*100)) %>%
   group_by(year) %>%
@@ -326,11 +326,11 @@ df_mean_article_year <-df_coverage_3 %>%
   #select ("year", "Fraud", "Heterogeneity complexity", "Incentives", 
   #        "Journals and publishing culture", "P-values", "Peer review", 
   #       "Reagents", "Sample size and power") %>%
-  select("year", "Bayesian stats", "Governmental or NGO actions", "Incentives", 
-         "Journals and publishing culture", "Meta-science", "P-values", "Peer review",
-         "Pre-registration", "Sample size and power","Training in research methods",
-         "Transparency of data or methodology") %>%
-  #select("year", everything()) %>%
+  #select("year", "Bayesian stats", "Governmental or NGO actions", "Incentives", 
+  #      "Journals and publishing culture", "Meta-science", "P-values", "Peer review",
+  #       "Pre-registration", "Sample size and power","Training in research methods",
+  #       "Transparency of data or methodology") %>%
+  select("year", everything()) %>%
   gather(-c(1), key = "node", value = "coverage")
 
 
@@ -348,13 +348,6 @@ ggplot(df_mean_article_year,
   geom_ridgeline()+
   facet_wrap(~node)
 
-ggplot(df_mean_article_year, aes(x=year, y=coverage))+
-  geom_area()+
-  facet_wrap(~node)
-      
-  
-  
-
 
 ##MFA for year groupings
 Factoshiny(df_coverage_sorted_by_year_2)
@@ -364,6 +357,116 @@ coverage_MFA_year_result <- MFA(df_coverage_sorted_by_year_2,
              type=c('f','f','f','f','f','f','f','f'),
              name.group=c('Up to 2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018'),
              num.group.sup=c(),graph=FALSE)
+
+#Extract separate analysis by year data for ggplot
+Dim_1_2012 <- coverage_MFA_year_result$separate.analyses$`2012`$ind$coord[,1]
+Dim_1_2013 <- coverage_MFA_year_result$separate.analyses$`2013`$ind$coord[,1]
+Dim_1_2014 <- coverage_MFA_year_result$separate.analyses$`2014`$ind$coord[,1]
+Dim_1_2015 <- coverage_MFA_year_result$separate.analyses$`2015`$ind$coord[,1]
+Dim_1_2016 <- coverage_MFA_year_result$separate.analyses$`2016`$ind$coord[,1]
+Dim_1_2017 <- coverage_MFA_year_result$separate.analyses$`2017`$ind$coord[,1]
+Dim_1_2018 <- coverage_MFA_year_result$separate.analyses$`2018`$ind$coord[,1]
+
+Dim_2_2012 <- coverage_MFA_year_result$separate.analyses$`2012`$ind$coord[,2]
+Dim_2_2013 <- coverage_MFA_year_result$separate.analyses$`2013`$ind$coord[,2]
+Dim_2_2014 <- coverage_MFA_year_result$separate.analyses$`2014`$ind$coord[,2]
+Dim_2_2015 <- coverage_MFA_year_result$separate.analyses$`2015`$ind$coord[,2]
+Dim_2_2016 <- coverage_MFA_year_result$separate.analyses$`2016`$ind$coord[,2]
+Dim_2_2017 <- coverage_MFA_year_result$separate.analyses$`2017`$ind$coord[,2]
+Dim_2_2018 <- coverage_MFA_year_result$separate.analyses$`2018`$ind$coord[,2]
+
+Contrib_1_2012 <- coverage_MFA_year_result$separate.analyses$`2012`$ind$contrib[,1]
+Contrib_1_2013 <- coverage_MFA_year_result$separate.analyses$`2013`$ind$contrib[,1]
+Contrib_1_2014 <- coverage_MFA_year_result$separate.analyses$`2014`$ind$contrib[,1]
+Contrib_1_2015 <- coverage_MFA_year_result$separate.analyses$`2015`$ind$contrib[,1]
+Contrib_1_2016 <- coverage_MFA_year_result$separate.analyses$`2016`$ind$contrib[,1]
+Contrib_1_2017 <- coverage_MFA_year_result$separate.analyses$`2017`$ind$contrib[,1]
+Contrib_1_2018 <- coverage_MFA_year_result$separate.analyses$`2018`$ind$contrib[,1]
+
+Contrib_2_2012 <- coverage_MFA_year_result$separate.analyses$`2012`$ind$contrib[,2]
+Contrib_2_2013 <- coverage_MFA_year_result$separate.analyses$`2013`$ind$contrib[,2]
+Contrib_2_2014 <- coverage_MFA_year_result$separate.analyses$`2014`$ind$contrib[,2]
+Contrib_2_2015 <- coverage_MFA_year_result$separate.analyses$`2015`$ind$contrib[,2]
+Contrib_2_2016 <- coverage_MFA_year_result$separate.analyses$`2016`$ind$contrib[,2]
+Contrib_2_2017 <- coverage_MFA_year_result$separate.analyses$`2017`$ind$contrib[,2]
+Contrib_2_2018 <- coverage_MFA_year_result$separate.analyses$`2018`$ind$contrib[,2]
+
+MFA_node_labels <- rownames(coverage_MFA_year_result$separate.analyses$`2012`$ind$coord)
+
+MFA_1_2 <- data.frame("Dim1_2012" = Dim_1_2012, 
+           "Dim1_2013" = Dim_1_2013,
+           "Dim1_2014" = Dim_1_2014,
+           "Dim1_2015" = Dim_1_2015,
+           "Dim1_2016" = Dim_1_2016, 
+           "Dim1_2017" = Dim_1_2017,
+           "Dim1_2018" = Dim_1_2018,
+           "Dim2_2012" = Dim_2_2012,
+           "Dim2_2013" = Dim_2_2013,
+           "Dim2_2014" = Dim_2_2014,
+           "Dim2_2015" = Dim_2_2015,
+           "Dim2_2016" = Dim_2_2016, 
+           "Dim2_2017" = Dim_2_2017,
+           "Dim2_2018" = Dim_2_2018,
+           "Contrib_1_2012" = Contrib_1_2012,
+           "Contrib_1_2013" = Contrib_1_2013,
+           "Contrib_1_2014" = Contrib_1_2014,
+           "Contrib_1_2015" = Contrib_1_2015,
+           "Contrib_1_2016" = Contrib_1_2016,
+           "Contrib_1_2017" = Contrib_1_2017,
+           "Contrib_1_2018" = Contrib_1_2018,
+           "Contrib_2_2012" = Contrib_2_2012,
+           "Contrib_2_2013" = Contrib_2_2013,
+           "Contrib_2_2014" = Contrib_2_2014,
+           "Contrib_2_2015" = Contrib_2_2015,
+           "Contrib_2_2016" = Contrib_2_2016,
+           "Contrib_2_2017" = Contrib_2_2017,
+           "Contrib_2_2018" = Contrib_2_2018) %>%
+             `rownames<-`(MFA_node_labels) %>%
+             rownames_to_column(var = "Name") %>%
+             mutate("TotalContrib_2012" = Contrib_1_2012 + Contrib_2_2012) %>%
+             mutate("TotalContrib_2013" = Contrib_1_2013 + Contrib_2_2013) %>%
+             mutate("TotalContrib_2014" = Contrib_1_2014 + Contrib_2_2014) %>%
+             mutate("TotalContrib_2015" = Contrib_1_2015 + Contrib_2_2015) %>%
+             mutate("TotalContrib_2016" = Contrib_1_2016 + Contrib_2_2016) %>%
+             mutate("TotalContrib_2017" = Contrib_1_2017 + Contrib_2_2017) %>%
+             mutate("TotalContrib_2018" = Contrib_1_2018 + Contrib_2_2018) 
+  
+MFA_1_2_long <- MFA_1_2 %>%
+  select(-c(16:29)) %>%
+  pivot_longer(-Name,
+               names_to = c(".value", "Year"), 
+               names_sep = "_") %>%
+  mutate_if(is.numeric, round, 2)
+ 
+#extract subset analysis by year for ggplot            
+MFA_Dim1 <- coverage_MFA_year_result$ind$coord.partiel[,1]
+MFA_Dim2 <- coverage_MFA_year_result$ind$coord.partiel[,2]
+partial_point_labels <- rownames(coverage_MFA_year_result$ind$coord.partiel)
+
+MFA_partial_points <- data_frame("Dim1" = MFA_Dim1,
+                                 "Dim2" = MFA_Dim2) %>%
+  `rownames<-`(partial_point_labels) %>%
+  rownames_to_column(var = "Name") %>%
+  mutate(Year = Name) %>%
+  mutate(Name = str_remove(Name, "\\..*")) %>%
+  mutate(Year = str_remove(Year, "^.*\\."))
+
+#ggplot for separate analyses by year
+ggplot(MFA_1_2_long,
+       aes(x=Dim1, y=Dim2, group=Year))+
+  geom_point()+
+  facet_wrap(~Year)+
+  geom_text(data = subset(MFA_1_2_long, TotalContrib > 4), 
+             aes(label = Name),
+            size = 3, vjust = 0, nudge_y = 0.2, check_overlap = TRUE)
+
+#ggplot for subset analyses by year
+ggplot(MFA_partial_points,
+       aes(x=Dim1, y=Dim2, group=Year))+
+  geom_point()+
+  facet_wrap(~Year)+
+  geom_text(aes(label=Name),
+            size = 2, vjust = 0, nudge_y = 0.2, check_overlap = TRUE)
 
 
 
