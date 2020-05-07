@@ -310,6 +310,7 @@ group_by(df_coverage_3, year) %>%
   tally()
 
 ##Mean article profile by year
+#Create dataframe for mean article profiles
 df_mean_article_year <-df_coverage_3 %>%
   mutate(total_coded = rowSums(.[,2:30])) %>%
   filter(year > 2010) %>%
@@ -333,23 +334,31 @@ df_mean_article_year <-df_coverage_3 %>%
   select("year", everything()) %>%
   gather(-c(1), key = "node", value = "coverage")
 
-
+#Plot individual density plots
 ggplot(df_mean_article_year,
        aes(x=year, y=coverage, group=node))+
   geom_area()+
   facet_wrap(~node)
 
+#Plot heatmap
 ggplot(df_mean_article_year,
-       aes(x=year, y=coverage, group=node, fill=node))+
-  geom_area()
-
+       aes(x=year, y=node, fill=coverage))+
+  geom_tile()+
+  scale_fill_viridis(discrete = FALSE)
+    
+#Plot something kind of like sparklines (not happy with this yet)
 ggplot(df_mean_article_year,
-       aes(x=year, y=coverage, height=coverage, group=node))+
-  geom_ridgeline()+
-  facet_wrap(~node)
+       aes(x=year, y=coverage, group=node))+
+  geom_line()+
+  facet_grid(rows = vars(node))
+
+#Plot density ridges
+ggplot(df_mean_article_year,
+       aes(x=year, y=node, height=coverage, group=node))+ 
+  geom_density_ridges(stat = "identity", scale = 1.3)
 
 
-##MFA for year groupings
+##Conduct MFA with nodes as individuals and years as groups
 Factoshiny(df_coverage_sorted_by_year_2)
 
 coverage_MFA_year_result <- MFA(df_coverage_sorted_by_year_2,
