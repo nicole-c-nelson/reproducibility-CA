@@ -10,7 +10,7 @@ library(ggridges)
 
 ##Read IRR and node summary files
 IRR_files <- dir_ls("Data/IRR files") #create list of all files in the IRR data folder
-summary_files <- dir_ls("Data/Node summary files") #create list of all files in node summary data folder
+summary_files <- dir_ls("Data/Node summary files 2020-05-21") #create list of all files in node summary data folder
 
 
 ##Create IRR data frame
@@ -29,13 +29,12 @@ df_IRR <- IRR_files %>%
 
 ##Create metadata data frame
 #Create initial metadata data frame and clean up Name column
-df_metadata <- read.csv("Data/Metadata 2020-03-19.csv") %>%
+df_metadata <- read.csv("Data/Metadata 2020-05-26.csv") %>%
   rename(Name = X)
 
 df_metadata <- df_metadata %>% 
   mutate(Name = str_replace(df_metadata$Name, 
-                            "[0-9]*[:blank:]\\:[:blank:]", 
-                            ""))
+                            "[0-9]*[:blank:]\\:[:blank:]", ""))
 
 # fix column names 
 # get vector of current column names
@@ -74,21 +73,21 @@ df_metadata_3 <-  df_metadata_2 %>%
   select(-value) %>% 
   rename(audience = name)
 
-#create variable for journalist/not journalist
+#create variable for author
 df_metadata_4 <- df_metadata_3 %>% 
-  pivot_longer(2:3) %>% 
+  pivot_longer(2:4) %>% 
   mutate(value = replace(name, value == 0, NA)) %>% #replace cells that have 0 with NA
   drop_na(value) %>%
   select(-value) %>% 
-  rename(journalist = name)
+  rename(author = name)
 
-#create variable for topic
+#create variable for term
 df_metadata_5 <- df_metadata_4 %>% 
   pivot_longer(2:46) %>% 
   mutate(value = replace(name, value == 0, NA)) %>% #replace cells that have 0 with NA
   drop_na(value) %>%
   select(-value) %>% 
-  rename(topic = name)
+  rename(term = name)
 
 #check for articles that have missing metadata
 df_metadata_2 %>% 
@@ -112,40 +111,45 @@ df_metadata_2 %>%
 df_metadata_6 <- df_metadata_5 %>%
   mutate(
     repro_repli = case_when(
-      topic == "Reproducibility" ~ "reproducibility",
-      topic == "Reproducibility.crisis" ~ "reproducibility",
-      topic == "Irreproducibility" ~ "reproducibility",
-      topic == "Data.reproducibility.crisis" ~ "reproducibility",
-      topic == "Replication.replicability" ~ "replication",
-      topic == "Replication.crisis" ~ "replication",
-      topic == "Replicability.Crisis" ~ "replication",
+      term == "Reproducibility" ~ "reproducibility",
+      term == "Reproducibility.crisis" ~ "reproducibility",
+      term == "Irreproducibility" ~ "reproducibility",
+      term == "Data.reproducibility.crisis" ~ "reproducibility",
+      term == "Replication.replicability" ~ "replication",
+      term == "Replication.crisis" ~ "replication",
+      term == "Replicability.Crisis" ~ "replication",
       TRUE ~ "other"))
 
 
-##Create coverage data frame
+##Use IRR scores to select nodes from the coverage data frame
+#Create coverage data frame
 df_coverage <- summary_files %>%
   map_dfr(read_xlsx, .id = "node") %>% #read in every file; add "node" variable based on file name
   select(node, Name, Coverage) %>% #select 3 relevant variables
-  mutate(node = str_sub(node, start = 25, end = -6)) %>% #fix name of nodes
+  mutate(node = str_sub(node, start = 36, end = -6)) %>% #fix name of nodes
   pivot_wider(names_from = "node", values_from = "Coverage", values_fill = list(Coverage = 0)) #switch to wide data format; fill empty cells with 0
 
-#Use IRR scores to select nodes from the coverage frame
+#Create a data frame of nodes reaching the IRR threshold
 df_IRR_2 <- df_IRR %>%
   select(Name, Ave_Kappa) %>% #select node name and average kappa score
-  filter(Ave_Kappa >= 0.60) %>% #select all nodes reaching the IRR threshold
+  filter(Ave_Kappa >= 0.60) %>% #select all nodes with an average Kappa of greater than 0.60
   pivot_wider(names_from = Name, values_from = Ave_Kappa) %>% #pivot so that node names become the variables rather than the rows
   select(-starts_with("Overall")) %>% #get rid of overall average Kappa score as a variable
   mutate(Name = NA)  #add a blank column to this data frame to match up with the "Name" variable in the count and coverage data frames
 
+#Use this IRR threshold data frame to filter the coverage data frame
 df_coverage_2 <- df_coverage %>%
-  select(colnames(df_IRR_2)) %>% #select nodes matching those in the filtered IRR table
+  select(colnames(df_IRR_2)) %>% #select nodes matching those in the IRR threshold data frame
   select(Name, everything()) 
 
 #join metadata to coverage dataframe
 df_coverage_3 <- inner_join(df_coverage_2, df_metadata_6, by = "Name")
 
-df_coverage_3 %>%
-  filter(year <2016, `2016 Nature survey` > 0)
+#join auto-coded nodes to coverage dataframe
+#ignore for now; have to get Harald to output these for me
+#df_auto_code <-select(df_coverage, Name, contains("(auto)"))
+#df_coverage_4 <-inner_join()
+
 
 #set article names to row names for FactomineR analysis
 df_coverage_4 <- df_coverage_3 %>%
@@ -160,15 +164,16 @@ coverage_CA_result <- CA(df_coverage_4, #perform CA
                          quali.sup = c(30,31,32,33,34), #define qualitative variables as supplementary
                          ncp=18, #retain first 18 dimensions (for later clustering)
                          graph = FALSE) 
-show(coverage_CA_result$eig)
+view(coverage_CA_result$eig)
+view(coverage_CA_result$col$contrib)
 
 #Investigate(coverage_CA_result) #generate automatic CA report; doesn't work
 #summary_coverage_CA <- summary.CA(coverage_CA_result, nbelements = Inf, ncp = 5) #output CA summary result, makes a messy object that I'm not sure how to deal with
 
-dimdesc_1_4 <- dimdesc(coverage_CA_result, axes = 1:4, proba = 0.01) #create dimension descriptions
+dimdesc_1_3 <- dimdesc(coverage_CA_result, axes = 1:3, proba = 0.01) #create dimension descriptions
 
-show(dimdesc_1_4$"Dim 2"$quali) #output dimension descriptions
-show(dimdesc_1_4$"Dim 2"$category)
+view(dimdesc_1_3$"Dim 1"$quali) #output dimension descriptions
+view(dimdesc_1_3$"Dim 1"$category)
 
 #Clustering
 coverage_HCPC_result <- HCPC(coverage_CA_result, nb.clust=4, consol=TRUE, graph=FALSE) #perform clustering
@@ -176,7 +181,7 @@ coverage_HCPC_result <- HCPC(coverage_CA_result, nb.clust=4, consol=TRUE, graph=
 
 ##Plot for first factor plane uwsing FactoMineR functions
 plot.CA(coverage_CA_result, axes = c(1, 2), #plot first two dimensions
-        selectCol='contrib 8', #label only the 8 most contributing nodes
+        selectCol='contrib 26', #label only the 8 most contributing nodes
         label = "col", #label only the nodes
         invisible = c("quali.sup"), #make the supplementary variables invisible
         habillage = "repro_repli", #color the articles according to the repro_repli variable
@@ -279,16 +284,28 @@ df_coverage_pop <- df_coverage_3 %>%
 Factoshiny(df_coverage_sci)
 Factoshiny(df_coverage_pop)
 
+##Descriptive stats about the data set
+group_by(df_coverage_3, audience) %>% #articles broken out by audience
+  tally()
+
+group_by(df_coverage_3, author) %>% #articles broken out by author type
+  tally()
+
+group_by(df_coverage_3, year) %>% #articles broken out by year
+  tally()
+
+descriptive_stats <- group_by(df_coverage_3, audience, author, year) %>%
+  tally()
+
+write.csv(descriptive_stats, "Outputs/Descriptive_stats_2020-05-26.csv")
 
 ##Create data frames for MFA
-df_coverage_sorted_by_journ <- df_coverage_3 %>%
-  arrange(journalist) %>%
+df_coverage_sorted_by_auth <- df_coverage_3 %>%
+  arrange(author) %>%
   select(-c(31:35)) %>%
   column_to_rownames(var = "Name")
 
-df_coverage_sorted_by_journ_2 <- data.frame(t(df_coverage_sorted_by_journ))
-
-Factoshiny(df_coverage_sorted_by_journ_2)
+df_coverage_sorted_by_auth_2 <- data.frame(t(df_coverage_sorted_by_auth))
 
 df_coverage_sorted_by_aud <- df_coverage_3 %>%
   arrange(audience) %>%
@@ -297,8 +314,6 @@ df_coverage_sorted_by_aud <- df_coverage_3 %>%
 
 df_coverage_sorted_by_aud_2 <- data.frame(t(df_coverage_sorted_by_aud))
 
-Factoshiny(df_coverage_sorted_by_aud_2)
-
 df_coverage_sorted_by_year <- df_coverage_3 %>%
   arrange(year) %>%
   select(-c(31:35)) %>%
@@ -306,11 +321,41 @@ df_coverage_sorted_by_year <- df_coverage_3 %>%
 
 df_coverage_sorted_by_year_2 <- data.frame(t(df_coverage_sorted_by_year))
 
-group_by(df_coverage_3, year) %>%
-  tally()
+#MFA on data sorted by audience
+coverage_MFA_aud_result <-MFA(df_coverage_sorted_by_aud_2,
+                              group=c(136,217),type=c('f','f'),
+                              name.group=c('Popular', 'Scientific'),
+                              num.group.sup=c(),graph=FALSE)
+
+plot.MFA(coverage_MFA_aud_result, 
+         choix="ind",partial='all',
+         lab.par=FALSE,select='contrib  10',
+         habillage='group',
+         title="MFA by audience, 10 most contributing nodes",
+         cex=0.55,cex.main=0.55,cex.axis=0.55)
+
+show(which(coverage_MFA_aud_result$freq$coord[,2]>1.5)) #finding articles that are high on Dim2 for this MFA
+show(which(coverage_MFA_aud_result$freq$coord[,2]<(-0.6)))
+view(coverage_MFA_aud_result$freq$coord)
+view(coverage_MFA_aud_result$ind$contrib)
+
+#MFA on data sorted by author
+Factoshiny(df_coverage_sorted_by_auth_2)
+
+coverage_MFA_auth_result <-MFA(df_coverage_sorted_by_auth_2,
+                              group=c(120,25,208),type=c('f','f','f'),
+                              name.group=c('Journalist', 'Other', 'Scientist'),
+                              num.group.sup=c(2),graph=FALSE)
+
+plot.MFA(coverage_MFA_auth_result, 
+         choix="ind",partial='all',
+         lab.par=FALSE,select='contrib  10',
+         habillage='group',
+         title="MFA by author, 10 most contributing nodes",
+         cex=0.55,cex.main=0.55,cex.axis=0.55)
 
 ##Mean article profile by year
-#Create dataframe for mean article profiles
+#Create data frame for mean article profiles
 df_mean_article_year <-df_coverage_3 %>%
   mutate(total_coded = rowSums(.[,2:30])) %>%
   filter(year > 2010) %>%
