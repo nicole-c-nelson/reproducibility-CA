@@ -6,6 +6,9 @@ library(Factoshiny)
 library(ggplot2)
 library(viridis)
 library(ggridges)
+library(ggrepel)
+library(factoextra)
+
 
 
 ##Read IRR and node summary files
@@ -146,22 +149,21 @@ df_coverage_2 <- df_coverage %>%
 df_coverage_3 <- inner_join(df_coverage_2, df_metadata_6, by = "Name")
 
 #join auto-coded nodes to coverage dataframe
-#ignore for now; have to get Harald to output these for me
-#df_auto_code <-select(df_coverage, Name, contains("(auto)"))
-#df_coverage_4 <-inner_join()
-
+df_auto_code <-select(df_coverage, Name, contains("(auto)"))
+df_coverage_4 <-inner_join(df_coverage_3, df_auto_code, by = "Name")
 
 #set article names to row names for FactomineR analysis
-df_coverage_4 <- df_coverage_3 %>%
+df_coverage_5 <- df_coverage_4 %>%
   column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
 
 
 ##Analysis with FactomineR
-Factoshiny(df_coverage_4) #open FactoShiny interface
+Factoshiny(df_coverage_5) #open FactoShiny interface
 
 #Correspondence analysis
-coverage_CA_result <- CA(df_coverage_4, #perform CA
+coverage_CA_result <- CA(df_coverage_5, #perform CA
                          quali.sup = c(30,31,32,33,34), #define qualitative variables as supplementary
+                         quanti.sup = c(35,36,37,38,39,40),
                          ncp=18, #retain first 18 dimensions (for later clustering)
                          graph = FALSE) 
 view(coverage_CA_result$eig)
@@ -174,12 +176,14 @@ dimdesc_1_3 <- dimdesc(coverage_CA_result, axes = 1:3, proba = 0.01) #create dim
 
 view(dimdesc_1_3$"Dim 1"$quali) #output dimension descriptions
 view(dimdesc_1_3$"Dim 1"$category)
+view(dimdesc_1_3$`Dim 1`$quanti)
 
 #Clustering
 coverage_HCPC_result <- HCPC(coverage_CA_result, nb.clust=4, consol=TRUE, graph=FALSE) #perform clustering
 
 
-##Plot for first factor plane uwsing FactoMineR functions
+##Plots using FactoMineR functions
+#First factor plane
 plot.CA(coverage_CA_result, axes = c(1, 2), #plot first two dimensions
         selectCol='contrib 26', #label only the 8 most contributing nodes
         label = "col", #label only the nodes
@@ -188,8 +192,20 @@ plot.CA(coverage_CA_result, axes = c(1, 2), #plot first two dimensions
         col.col = "chartreuse4", 
         palette=palette(c("black","red","blue")), #
         graph.type = c("ggplot"),
-        title = "Coverage Dim 1/2; eight most contributing nodes"
-        )
+        title = "Coverage Dim 1/2; eight most contributing nodes")
+
+##Plots using factoextra functions
+#Scree plot
+fviz_screeplot(coverage_CA_result)+
+  geom_hline(yintercept=(1/(29-1)*100),linetype=2, color="red")
+
+fviz_eig(coverage_CA_result, choice="eigenvalue")
+
+#First factor plane
+fviz_ca_biplot(coverage_CA_result, repel = TRUE,
+               label = "col")
+  
+fviz_ca_col(coverage_CA_result, repel = TRUE)
 
 ##Extract data from the CA and clustering objects to use for ggplot
 article_coord_1 <- coverage_CA_result$row$coord[,1]
@@ -206,6 +222,9 @@ node_contrib_1 <- coverage_CA_result$col$contrib[,1]
 node_contrib_2 <- coverage_CA_result$col$contrib[,2]
 node_contrib_3 <- coverage_CA_result$col$contrib[,3]
 node_contrib_4 <- coverage_CA_result$col$contrib[,4]
+node_cos2_1 <- coverage_CA_result$col$cos2[,1]
+node_cos2_2 <- coverage_CA_result$col$cos2[,2]
+node_cos2_3 <- coverage_CA_result$col$cos2[,3]
 node_labels <- rownames(coverage_CA_result$col$coord)
 
 article_coord <- data.frame("Dim_1" = article_coord_1, 
@@ -222,11 +241,16 @@ node_coord <- data.frame("Dim_1" = node_coord_1,
                          "Contrib_1" = node_contrib_1, 
                          "Contrib_2" = node_contrib_2,
                          "Contrib_3" = node_contrib_3,
-                         "Contrib_4" = node_contrib_4) %>%
+                         "Contrib_4" = node_contrib_4,
+                         "Cos2_1" = node_cos2_1,
+                         "Cos2_2" = node_cos2_2,
+                         "Cos2_3" = node_cos2_3) %>%
   `rownames<-`(node_labels) %>%
   rownames_to_column(var = "Name") %>%
   mutate("Contrib_1_2" = Contrib_1 + Contrib_2) %>%
-  mutate("Contrib_3_4" = Contrib_3 + Contrib_4)
+  mutate("Contrib_1_3" = Contrib_1 + Contrib_3) %>%
+  mutate("Cos2_1_2" = Cos2_1 + Cos2_2)%>%
+  mutate("Cos2_1_3" = Cos2_1 + Cos2_3)
 
 HCPC_labels <- rownames(coverage_HCPC_result$data.clust)
 coverage_HCPC_clusters <- as_tibble(coverage_HCPC_result$data.clust) %>%
@@ -237,17 +261,52 @@ coverage_HCPC_clusters <- as_tibble(coverage_HCPC_result$data.clust) %>%
 article_coord_metadata <- inner_join(article_coord, df_metadata_6, by = "Name")
 article_coord_cluster <- inner_join(article_coord, coverage_HCPC_clusters, by = "Name")
 article_coord_metadata_cluster <- inner_join(article_coord_metadata, coverage_HCPC_clusters, by = "Name")
+article_coord_metadata_auto <- inner_join(article_coord_metadata, df_auto_code, by = "Name")
 
+article_coord_metadata_auto_subset <- article_coord_metadata_auto %>%
+  filter(Dim_1<1, Dim_1>-1, Dim_2>-1, Dim_2<1)
+node_coord_subset <- node_coord %>%
+  filter(Dim_1<1, Dim_1>-1, Dim_2>-1, Dim_2<1)
 
 ##Plot first factor plane using ggplot
-ggplot(article_coord_metadata, aes(Dim_1,Dim_2)) +
-  geom_point(aes(color = repro_repli)) +
-  scale_color_viridis(discrete = TRUE, option = "D") +
-  geom_point(data = node_coord, aes(Dim_1, Dim_2), shape = 3) +
-  geom_label(data = subset(node_coord, Contrib_1_2 > 4), 
-             aes(label = Name),
-             nudge_y = 0.1,
-             label.size = 0.2)
+#First factor plane with psychology auto code and most contributing nodes
+ggplot(article_coord_metadata_auto, aes(Dim_1,Dim_2)) +
+  geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
+  geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
+  geom_point(aes(color = `Psychology (auto)`)) +
+  scale_color_viridis(discrete = FALSE, option = "D", direction = -1)+
+  geom_point(data = node_coord, aes(Dim_1, Dim_2, size=Contrib_1_2), shape = 1)+
+  geom_text_repel(data = subset(node_coord, Contrib_1_2 > 4), 
+             aes(label = Name), point.padding = 0.25, box.padding = 0.5)+
+  labs(size="Contribution",color="Mentions of psychology",
+       x="Dimension 1 (8.50%)", y="Dimension 2 (7.73%)")+
+  theme(legend.position = "bottom")
+
+#First factor plane detail with contributions and quality of representation
+ggplot(node_coord_subset,
+       aes(Dim_1,Dim_2, label=Name))+
+  geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
+  geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
+  geom_point(aes(size=Contrib_1_2, color=Cos2_1_2))+
+  scale_color_viridis(discrete = FALSE, option = "D")+
+  geom_text_repel(data = subset(node_coord_subset, Cos2_1_2 > 0.05),
+                  point.padding = 0.25, box.padding = 0.5)+
+  labs(size="Contribution", color="cos2",
+       x="Dimension 1 (8.50%)", y="Dimension 2 (7.73%)")+
+  theme(legend.position = "bottom")
+
+#Dims 1 and 3 with clusters
+ggplot(article_coord_cluster, aes(Dim_1,Dim_3))+
+  geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
+  geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
+  geom_point(aes(color = clust))+
+  scale_color_viridis(discrete = TRUE, option = "D", direction = -1)+
+  geom_point(data = node_coord, aes(Dim_1, Dim_3, size=Contrib_1_3), shape = 1)+
+  geom_text_repel(data = subset(node_coord, Contrib_1_3 > 1.7), 
+                  aes(label = Name), point.padding = 0.25, box.padding = 0.5)+
+  labs(size="Contribution", color="Cluster",
+       x="Dimension 1 (8.50%)", y="Dimension 3 (6.95%)")+
+  theme(legend.position = "bottom")
 
 ggplot(article_coord_metadata, aes(Dim_1,Dim_2)) +
   geom_point(aes(color = repro_repli)) +
