@@ -227,6 +227,14 @@ node_cos2_2 <- coverage_CA_result$col$cos2[,2]
 node_cos2_3 <- coverage_CA_result$col$cos2[,3]
 node_labels <- rownames(coverage_CA_result$col$coord)
 
+sup_coord_1 <- coverage_CA_result$quanti.sup$coord[,1]
+sup_coord_2 <- coverage_CA_result$quanti.sup$coord[,2]
+sup_labels <- rownames(coverage_CA_result$quanti.sup$coord)
+
+quali_sup_coord_1 <-coverage_CA_result$quali.sup$coord[,1]
+quali_sup_coord_2 <-coverage_CA_result$quali.sup$coord[,2]
+quali_sup_labels <- rownames(coverage_CA_result$quali.sup$coord)
+
 article_coord <- data.frame("Dim_1" = article_coord_1, 
                             "Dim_2" = article_coord_2,
                             "Dim_3" = article_coord_3,
@@ -258,6 +266,24 @@ coverage_HCPC_clusters <- as_tibble(coverage_HCPC_result$data.clust) %>%
   rownames_to_column(var = "Name") %>%
   select(Name, clust) 
 
+quant_sup_coord <- data_frame("Dim_1" = sup_coord_1,
+                         "Dim_2" = sup_coord_2) %>%
+  `rownames<-`(sup_labels) %>%
+  rownames_to_column(var = "Name") %>%
+  filter(Name == "Psychology (auto)" | Name == "NIH (auto)") %>%
+  mutate(Name = str_remove(Name, "\\(auto\\)"))
+
+quali_sup_coord <- data_frame("Dim_1" = quali_sup_coord_1,
+                              "Dim_2" = quali_sup_coord_2) %>%
+  `rownames<-`(quali_sup_labels) %>%
+  rownames_to_column(var = "Name") %>%
+  filter(grepl("repro_repli.rep|audience", Name)) %>%
+  mutate(Name = str_remove(Name, "repro_repli.")) %>%
+  mutate(Name = str_remove(Name, "audience."))
+
+sup_coord <- bind_rows(quali_sup_coord, quant_sup_coord)
+  
+
 article_coord_metadata <- inner_join(article_coord, df_metadata_6, by = "Name")
 article_coord_cluster <- inner_join(article_coord, coverage_HCPC_clusters, by = "Name")
 article_coord_metadata_cluster <- inner_join(article_coord_metadata, coverage_HCPC_clusters, by = "Name")
@@ -269,17 +295,21 @@ node_coord_subset <- node_coord %>%
   filter(Dim_1<1, Dim_1>-1, Dim_2>-1, Dim_2<1)
 
 ##Plot first factor plane using ggplot
-#First factor plane with psychology auto code and most contributing nodes
+#First factor plane with repro/repli and most contributing nodes
 ggplot(article_coord_metadata_auto, aes(Dim_1,Dim_2)) +
   geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
   geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
-  geom_point(aes(color = `Psychology (auto)`)) +
-  scale_color_viridis(discrete = FALSE, option = "D", direction = -1)+
+  geom_point(aes(color = repro_repli)) +
+  scale_color_viridis(discrete = TRUE, option = "D", direction = -1)+
   geom_point(data = node_coord, aes(Dim_1, Dim_2, size=Contrib_1_2), shape = 1)+
   geom_text_repel(data = subset(node_coord, Contrib_1_2 > 4), 
-             aes(label = Name), point.padding = 0.25, box.padding = 0.5)+
-  labs(size="Contribution",color="Mentions of psychology",
-       x="Dimension 1 (8.50%)", y="Dimension 2 (7.73%)")+
+             aes(label = Name), point.padding = 0.25, box.padding = 0.75)+
+  geom_point(data=sup_coord, shape=3, color="red",
+             aes(x=Dim_1, y=Dim_2))+
+  geom_text_repel(data = sup_coord, color="red",
+                  aes(label = Name), point.padding = 0.25, box.padding = 0.5)+
+  labs(size="Contribution",color="Terms",
+       x="Dim 1: 'Discipline' (8.50%)", y="Dim 2: 'Audience' (7.73%)")+
   theme(legend.position = "bottom")
 
 #First factor plane detail with contributions and quality of representation
@@ -305,7 +335,7 @@ ggplot(article_coord_cluster, aes(Dim_1,Dim_3))+
   geom_text_repel(data = subset(node_coord, Contrib_1_3 > 1.7), 
                   aes(label = Name), point.padding = 0.25, box.padding = 0.5)+
   labs(size="Contribution", color="Cluster",
-       x="Dimension 1 (8.50%)", y="Dimension 3 (6.95%)")+
+       x="Dim 1: 'Discipine' (8.50%)", y="Dim 3: 'Pereceptions of variation' (6.95%)")+
   theme(legend.position = "bottom")
 
 ggplot(article_coord_metadata, aes(Dim_1,Dim_2)) +

@@ -9,8 +9,6 @@ library(ggplot2)
 library(viridis)
 library(ggrepel)
 
-library(Factoshiny)
-
 
 ##Create a data frame of IRR scores
 IRR_files <- dir_ls("Data/IRR files") #create list of all files in the IRR data folder
@@ -101,7 +99,6 @@ MFA_result <- MFA(df_coverage_5,
                   num.group.sup=c(1), #define the before 2011 group as supplementary
                   graph=FALSE)
 
-Factoshiny(df_coverage_5)
 
 ##Extract values from the FactoMineR object to use in ggplot
 #Extract the partial coordinates for the nodes
@@ -109,7 +106,12 @@ MFA_dim1_nodes <- MFA_result$ind$coord.partiel[,1]
 MFA_dim2_nodes <- MFA_result$ind$coord.partiel[,2]
 MFA_node_labels <- rownames(MFA_result$ind$coord.partiel)
 
-#Combine node coordinates into a data frame
+#Extract the global coordinates for the nodes
+MFA_dim1_nodes_overall <- MFA_result$ind$coord[,1]
+MFA_dim2_nodes_overall <- MFA_result$ind$coord[,2]
+MFA_node_labels_overall <- rownames(MFA_result$ind$coord)
+
+#Combine node coordinates into data frames
 df_MFA_nodes <- data_frame("Dim1" = MFA_dim1_nodes,
                                  "Dim2" = MFA_dim2_nodes) %>%
   `rownames<-`(MFA_node_labels) %>%
@@ -117,6 +119,11 @@ df_MFA_nodes <- data_frame("Dim1" = MFA_dim1_nodes,
   mutate(Year = Node) %>% #copy the node data into a new column named Year
   mutate(Node = str_remove(Node, "\\..*")) %>% #remove the year info from the Node column
   mutate(Year = str_remove(Year, "^.*\\.")) #remove the node info from the Year column
+
+df_MFA_nodes_overall <- data_frame("Dim1_overall" = MFA_dim1_nodes_overall,
+                                   "Dim2_overall" = MFA_dim2_nodes_overall) %>%
+  `rownames<-`(MFA_node_labels_overall) %>%
+  rownames_to_column(var = "Node") 
 
 #Extract the contribution and cos2 information for the nodes
 MFA_contrib1_nodes <- MFA_result$ind$contrib[,1]
@@ -135,7 +142,9 @@ df_MFA_node_contrib_cos <- data_frame("Contrib1" = MFA_contrib1_nodes,
   mutate(Contrib1_2 = Contrib1 + Contrib2) %>% #create a new variable for contribution on the first factor plane
   mutate(Cos2_1_2 = Cos2_1 + Cos2_2) #create a new variable for cos2 on the first factor plane
 
-df_MFA_nodes_2 <- inner_join(df_MFA_nodes, df_MFA_node_contrib_cos, by="Node")
+#Combine node coordinates and contribution/cos2 information
+df_MFA_nodes_2 <-inner_join(df_MFA_nodes_overall, df_MFA_node_contrib_cos, by = "Node")
+df_MFA_nodes_3 <- inner_join(df_MFA_nodes_2, df_MFA_nodes, by = "Node")
 
 #Extract coordinates, contribution, and cos2 for articles
 MFA_dim1_articles <- MFA_result$freq$coord[,1]
@@ -167,23 +176,43 @@ df_MFA_articles_2 <- inner_join(df_MFA_articles, df_metadata_3, by="Name") %>%
   mutate(Contrib1_2 = Contrib1 + Contrib2) %>% #create a new variable for contribution on the first factor plane
   mutate(Cos2_1_2 = Cos2_1 + Cos2_2) #create a new variable for cos2 on the first factor plane
  
-
 df_MFA_articles_3 <- inner_join(df_MFA_articles_2, df_auto_code, by = "Name")
 
 
 ##Create figures using ggplot
+#plot global analysis
+ggplot(df_MFA_nodes_2,
+       aes(x=Dim1_overall, y=Dim2_overall))+
+  geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
+  geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
+  geom_point(data= df_MFA_articles_3,
+             aes(x=Dim1, y=Dim2, color=`Psychology (auto)`))+
+  scale_color_viridis(direction = -1)+
+  geom_point(shape=1, aes(size=Contrib1_2))+
+  geom_text_repel(data= subset(df_MFA_nodes_2, Contrib1_2 > 4),
+                  aes(label=Node),
+                  point.padding = 0.25, box.padding = 0.5)+
+  labs(size="Contribution", color="Mentions of psychology",
+       x="Dim 1: 'Discipline' (8.78%)", y="Dim 2: 'Audience' (7.78%)")+
+  theme(legend.position = "bottom")
+
+#plot subsets by year grouping
 ggplot(df_MFA_articles_3,
        aes(x=Dim1, y=Dim2, group=Year))+
   geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
   geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
   geom_point(aes(color=`Psychology (auto)`))+
   scale_color_viridis(direction = -1)+
-  geom_point(data = df_MFA_nodes_2, shape=1,
+  geom_point(data = df_MFA_nodes_3, shape=1,
              aes(x=Dim1, y=Dim2,
                  size=Contrib1_2, group=Year))+
-  geom_text_repel(data= subset(df_MFA_nodes_2, Contrib1_2 > 4),
+  geom_text_repel(data= subset(df_MFA_nodes_3, Contrib1_2 > 4),
                   aes(label=Node),
                   point.padding = 0.25, box.padding = 0.5)+
-  facet_wrap(~Year)
+  facet_wrap(~Year)+
+  labs(size="Contribution", color="Mentions of psychology",
+       x="Dim 1: 'Discipline' (8.78%)", y="Dim 2: 'Audience' (7.78%)")+
+  theme(legend.position = "bottom")
+
 
 
