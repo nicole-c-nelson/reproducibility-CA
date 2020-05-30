@@ -155,8 +155,7 @@ df_MFA_articles <- data_frame("Dim1" = MFA_dim1_articles,
                            "Cos2_2" = MFA_cos2_2_articles) %>%
   `rownames<-`(MFA_article_labels) %>%
   rownames_to_column(var = "Name") %>% #make the row names into their own column
-  mutate(Name = gsub("^X2", "2", Name)) %>% #remove instances where FactoMineR has weirdly added an X in front of the year
-  mutate(Name = gsub("^X1", "1", Name))
+  mutate(Name = gsub("^(X)([0-9])", "\\2",, Name)) #remove instances where FactoMineR has weirdly added an X in front of the year
 
 df_MFA_articles_2 <- inner_join(df_MFA_articles, df_metadata_3, by="Name") %>%
   mutate(Year = fct_collapse(Year, #collapse the years into four groups matching the original MFA groups
