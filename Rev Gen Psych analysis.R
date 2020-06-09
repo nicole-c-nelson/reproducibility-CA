@@ -91,6 +91,24 @@ df_coverage_4 <-select(df_coverage_3, -Year) #remove the year column
 
 df_coverage_5 <- data.frame(t(df_coverage_4)) #make the nodes the rows instead of the columns
 
+#Create data frame for mean article profiles by year grouping
+df_mean_article_year <-df_coverage_3 %>%
+  rownames_to_column(var = "Name") %>% #create a column for article names
+  filter(Year > 2010) %>% #remove articles published before 2010
+  mutate(total_coded = rowSums(.[3:31])) %>% # calculate the total % of text coded in each article
+  mutate_at(c(3:31), funs((./total_coded)*100)) %>% #for each node, calculate the % of text coded as a % of total text coded
+  mutate(Year = fct_collapse(Year, #creat four groups for publication year
+                             "2011/12" = c("2011", "2012"),
+                             "2013/14" = c("2013", "2014"),
+                             "2015/16" = c("2015", "2016"),
+                             "2017/18" = c("2017", "2018"))) %>%
+  group_by(Year) %>% #grouping by the year column doesn't do anything visible, but it allows the next calcuation to be performed
+  summarise_if(is.numeric, mean) %>% #calculate the mean % of text coded for each node in year year grouping
+  select(-c(31)) %>% #remove the % of text coded column
+  select(Year, everything()) %>% #move the year column to the front
+  gather(-c(1), key = "Node", value = "mean_%_coverage") #reformat the data from wide to long
+
+
 ##Perform subset correspondence analysis
 MFA_result <- MFA(df_coverage_5,
                   group = c(18,39,46,104,146), #group by publication year
@@ -118,12 +136,15 @@ df_MFA_nodes <- data_frame("Dim1" = MFA_dim1_nodes,
   rownames_to_column(var = "Node") %>% #make the row names into their own column
   mutate(Year = Node) %>% #copy the node data into a new column named Year
   mutate(Node = str_remove(Node, "\\..*")) %>% #remove the year info from the Node column
-  mutate(Year = str_remove(Year, "^.*\\.")) #remove the node info from the Year column
+  mutate(Year = str_remove(Year, "^.*\\.")) %>% #remove the node info from the Year column
+  mutate(dist_org = sqrt(Dim1^2 + Dim2^2)) #create a new variable for distance from the origin
+
 
 df_MFA_nodes_overall <- data_frame("Dim1_overall" = MFA_dim1_nodes_overall,
                                    "Dim2_overall" = MFA_dim2_nodes_overall) %>%
   `rownames<-`(MFA_node_labels_overall) %>%
-  rownames_to_column(var = "Node") 
+  rownames_to_column(var = "Node") %>%
+  mutate(dist_org_overall = sqrt(Dim1_overall^2 + Dim2_overall^2)) #create a new variable for distance from the origin
 
 #Extract the contribution and cos2 information for the nodes
 MFA_contrib1_nodes <- MFA_result$ind$contrib[,1]
@@ -145,6 +166,9 @@ df_MFA_node_contrib_cos <- data_frame("Contrib1" = MFA_contrib1_nodes,
 #Combine node coordinates and contribution/cos2 information
 df_MFA_nodes_2 <-inner_join(df_MFA_nodes_overall, df_MFA_node_contrib_cos, by = "Node")
 df_MFA_nodes_3 <- inner_join(df_MFA_nodes_2, df_MFA_nodes, by = "Node")
+df_MFA_nodes_4 <- inner_join(df_MFA_nodes_3, df_mean_article_year, by = c("Year" = "Year", "Node" = "Node")) %>%
+  mutate_if(is.numeric, round, 2) %>% #round to two decimal places
+  select(Node, Year, Dim1, Dim2, dist_org, `mean_%_coverage`, everything())
 
 #Extract coordinates, contribution, and cos2 for articles
 MFA_dim1_articles <- MFA_result$freq$coord[,1]
@@ -164,7 +188,7 @@ df_MFA_articles <- data_frame("Dim1" = MFA_dim1_articles,
                            "Cos2_2" = MFA_cos2_2_articles) %>%
   `rownames<-`(MFA_article_labels) %>%
   rownames_to_column(var = "Name") %>% #make the row names into their own column
-  mutate(Name = gsub("^(X)([0-9])", "\\2",, Name)) #remove instances where FactoMineR has weirdly added an X in front of the year
+  mutate(Name = gsub("^(X)([0-9])", "\\2", Name)) #remove instances where FactoMineR has weirdly added an X in front of the year
 
 df_MFA_articles_2 <- inner_join(df_MFA_articles, df_metadata_3, by="Name") %>%
   mutate(Year = fct_collapse(Year, #collapse the years into four groups matching the original MFA groups
@@ -184,11 +208,12 @@ ggplot(df_MFA_nodes_2,
        aes(x=Dim1_overall, y=Dim2_overall))+
   geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
   geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
-  geom_point(data= df_MFA_articles_3,
+  theme_bw()+
+  geom_point(data= df_MFA_articles_3, size=0.7,
              aes(x=Dim1, y=Dim2, color=`Psychology (auto)`))+
-  scale_color_viridis(direction = -1)+
+  scale_color_viridis(direction = -1, option = "D")+
   geom_point(shape=1, aes(size=Contrib1_2))+
-  geom_text_repel(data= subset(df_MFA_nodes_2, Contrib1_2 > 4),
+  geom_text_repel(data= subset(df_MFA_nodes_2, Contrib1_2 > 3.8),
                   aes(label=Node),
                   point.padding = 0.25, box.padding = 0.5)+
   labs(size="Contribution", color="Mentions of psychology",
@@ -200,6 +225,7 @@ ggplot(df_MFA_articles_3,
        aes(x=Dim1, y=Dim2, group=Year))+
   geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
   geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
+  theme_bw()+
   geom_point(aes(color=`Psychology (auto)`))+
   scale_color_viridis(direction = -1)+
   geom_point(data = df_MFA_nodes_3, shape=1,
