@@ -47,6 +47,7 @@ df_IRR_2 <- df_IRR %>%
 
 #Use this filtered IRR data frame to filter the coverage data frame
 df_coverage_2 <- df_coverage %>%
+  mutate(Name = str_replace_all(Name, "[^a-zA-Z0-9]", "")) %>% #remove special characters
   select(colnames(df_IRR_2)) %>% #select nodes matching those in the filtered IRR data frame
   select(Name, everything()) #put the Name column first
 
@@ -58,6 +59,7 @@ df_metadata <- read.csv("Data/Metadata 2020-05-26.csv") %>% #create the initial 
 df_metadata_2 <- df_metadata %>% 
   mutate(Name = str_replace(df_metadata$Name, 
                             "[0-9]*[:blank:]\\:[:blank:]", "")) %>% #clean up the Name column
+  mutate(Name = str_replace_all(Name, "[^a-zA-Z0-9]", "")) %>% #remove special characters
   select(1:19) %>% #select columns with publication year data
   pivot_longer(cols = matches("[[:digit:]]{4}")) %>% #pivot all column with 4 digits in them
   mutate(value = replace(name, value == 0, NA)) %>% #replace cells that have 0 with NA
@@ -237,6 +239,7 @@ ggplot(df_MFA_articles_3,
   labs(size="Contribution", color="Mentions of psychology",
        x="Dim 1: 'Discipline' (8.78%)", y="Dim 2: 'Audience' (7.78%)")+
   theme(legend.position = "bottom")
+
 
 
 
