@@ -226,12 +226,11 @@ ggplot(df_MFA_articles_3,
   geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
   geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
   theme_bw()+
-  geom_point(aes(color=`Psychology (auto)`))+
+  geom_point(size=0.7, aes(color=`Psychology (auto)`))+
   scale_color_viridis(direction = -1)+
   geom_point(data = df_MFA_nodes_3, shape=1,
-             aes(x=Dim1, y=Dim2,
-                 size=Contrib1_2, group=Year))+
-  geom_text_repel(data= subset(df_MFA_nodes_3, Contrib1_2 > 4),
+             aes(x=Dim1, y=Dim2, size=Contrib1_2, group=Year))+
+  geom_text_repel(data= subset(df_MFA_nodes_3, Contrib1_2 > 3.5), 
                   aes(label=Node),
                   point.padding = 0.25, box.padding = 0.5)+
   facet_wrap(~Year)+
