@@ -47,7 +47,7 @@ df_IRR_2 <- df_IRR %>%
 
 #Use this filtered IRR data frame to filter the coverage data frame
 df_coverage_2 <- df_coverage %>%
-  mutate(Name = str_replace_all(Name, "[^a-zA-Z0-9]", "")) %>% #remove special characters
+  mutate(Name = str_replace_all(Name, "[^a-zA-Z0-9]", "")) %>% #remove special characters, which cause errors in some people's systems
   select(colnames(df_IRR_2)) %>% #select nodes matching those in the filtered IRR data frame
   select(Name, everything()) #put the Name column first
 
@@ -71,25 +71,26 @@ df_metadata_2 <- df_metadata %>%
   select(-value) %>% #drop value column
   mutate(Year = str_extract(Year, "[[:digit:]]{4}")) #clean up year entries
 
-df_metadata_3 <- df_metadata_2 %>%
-  mutate(Name = str_replace_all(Name, "[^\\p{Latin}0-9]", ".")) #change the article names to align with FactoMineR output
-  
 ##Create a data frame of auto-coded nodes
 df_auto_code <-select(df_coverage, Name, contains("(auto)")) %>%
   mutate_at(vars(-Name), funs(.*100)) %>% #multiply by 100
-  mutate(Name = str_replace_all(Name, "[^\\p{Latin}0-9]", ".")) #change the article names to align with FactoMineR output
+  mutate(Name = str_replace_all(Name, "[^a-zA-Z0-9]", "")) #remove special characters
 
 ##Join coverage and metadata into a single data frame
 df_coverage_3 <- inner_join(df_coverage_2, df_metadata_2, by = "Name") %>% #combine coverage and publication year
-  select(Name, Year, everything()) %>% #move the name and year columns to the front
-  arrange(Year) %>% #sort by year
-  column_to_rownames(var = "Name") #set article names to row names for FactoMineR analysis
+  mutate(Year = fct_collapse(Year, #create groups by publication year
+                             "2011/12" = c("2011", "2012"),
+                             "2013/14" = c("2013", "2014"),
+                             "2015/16" = c("2015", "2016"),
+                             "2017/18" = c("2017", "2018"),
+                             other_level = "Before 2011")) %>%
 
 df_coverage_3 %>% #tally of number of articles in each year for setting up FactoMineR analysis
   group_by(Year) %>%
   tally()
 
-df_coverage_4 <-select(df_coverage_3, -Year) #remove the year column
+df_coverage_4 <-select(df_coverage_3, -Year) %>% #remove the year column
+  column_to_rownames(var = "Name") #set article names to row names for FactoMineR analysis
 
 df_coverage_5 <- data.frame(t(df_coverage_4)) #make the nodes the rows instead of the columns
 
@@ -99,7 +100,7 @@ df_mean_article_year <-df_coverage_3 %>%
   filter(Year > 2010) %>% #remove articles published before 2010
   mutate(total_coded = rowSums(.[3:31])) %>% # calculate the total % of text coded in each article
   mutate_at(c(3:31), funs((./total_coded)*100)) %>% #for each node, calculate the % of text coded as a % of total text coded
-  mutate(Year = fct_collapse(Year, #creat four groups for publication year
+  mutate(Year = fct_collapse(Year, #create groups by publication year
                              "2011/12" = c("2011", "2012"),
                              "2013/14" = c("2013", "2014"),
                              "2015/16" = c("2015", "2016"),
