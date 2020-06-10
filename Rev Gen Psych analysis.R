@@ -84,10 +84,12 @@ df_coverage_3 <- inner_join(df_coverage_2, df_metadata_2, by = "Name") %>% #comb
                              "2015/16" = c("2015", "2016"),
                              "2017/18" = c("2017", "2018"),
                              other_level = "Before 2011")) %>%
+  arrange(Year) #sort by year
 
-df_coverage_3 %>% #tally of number of articles in each year for setting up FactoMineR analysis
+year_group_count <- df_coverage_3 %>% #tally of number of articles in each year 
   group_by(Year) %>%
-  tally()
+  tally() %>%
+  pull(n) #extract the tally as a vector for setting up FactoMineR analysis
 
 df_coverage_4 <-select(df_coverage_3, -Year) %>% #remove the year column
   column_to_rownames(var = "Name") #set article names to row names for FactoMineR analysis
@@ -96,15 +98,10 @@ df_coverage_5 <- data.frame(t(df_coverage_4)) #make the nodes the rows instead o
 
 #Create data frame for mean article profiles by year grouping
 df_mean_article_year <-df_coverage_3 %>%
-  rownames_to_column(var = "Name") %>% #create a column for article names
-  filter(Year > 2010) %>% #remove articles published before 2010
+  filter(Year != "Before 2011") %>% #remove articles published before 2011
+  select(Name, Year, everything()) %>% #move the year column to the front
   mutate(total_coded = rowSums(.[3:31])) %>% # calculate the total % of text coded in each article
   mutate_at(c(3:31), funs((./total_coded)*100)) %>% #for each node, calculate the % of text coded as a % of total text coded
-  mutate(Year = fct_collapse(Year, #create groups by publication year
-                             "2011/12" = c("2011", "2012"),
-                             "2013/14" = c("2013", "2014"),
-                             "2015/16" = c("2015", "2016"),
-                             "2017/18" = c("2017", "2018"))) %>%
   group_by(Year) %>% #grouping by the year column doesn't do anything visible, but it allows the next calcuation to be performed
   summarise_if(is.numeric, mean) %>% #calculate the mean % of text coded for each node in year year grouping
   select(-c(31)) %>% #remove the % of text coded column
@@ -114,10 +111,10 @@ df_mean_article_year <-df_coverage_3 %>%
 
 ##Perform subset correspondence analysis
 MFA_result <- MFA(df_coverage_5,
-                  group = c(18,39,46,104,146), #group by publication year
+                  group = year_group_count, #group by publication year
                   type = c('f','f','f','f','f'), #specify type of data (frequency)
-                  name.group = c('Before 2011','2011/12','2013/14','2015/16','2017/18'), #name the groups
-                  num.group.sup=c(1), #define the before 2011 group as supplementary
+                  name.group = c('2011/12','2013/14','2015/16','2017/18','Before 2011'), #name the groups
+                  num.group.sup=c(5), #define the before 2011 group as supplementary
                   graph=FALSE)
 
 
@@ -193,7 +190,7 @@ df_MFA_articles <- data_frame("Dim1" = MFA_dim1_articles,
   rownames_to_column(var = "Name") %>% #make the row names into their own column
   mutate(Name = gsub("^(X)([0-9])", "\\2", Name)) #remove instances where FactoMineR has weirdly added an X in front of the year
 
-df_MFA_articles_2 <- inner_join(df_MFA_articles, df_metadata_3, by="Name") %>%
+df_MFA_articles_2 <- inner_join(df_MFA_articles, df_metadata_2, by="Name") %>%
   mutate(Year = fct_collapse(Year, #collapse the years into four groups matching the original MFA groups
                              "2011/12" = c("2011","2012"),
                              "2013/14" = c("2013","2014"),
@@ -202,12 +199,12 @@ df_MFA_articles_2 <- inner_join(df_MFA_articles, df_metadata_3, by="Name") %>%
   mutate(Contrib1_2 = Contrib1 + Contrib2) %>% #create a new variable for contribution on the first factor plane
   mutate(Cos2_1_2 = Cos2_1 + Cos2_2) #create a new variable for cos2 on the first factor plane
  
-df_MFA_articles_3 <- inner_join(df_MFA_articles_2, df_auto_code, by = "Name")
+df_MFA_articles_3 <- inner_join(df_MFA_articles_2, df_auto_code, by = "Name") #add the auto-code data to the articles data frame
 
 
 ##Create figures using ggplot
 #plot global analysis
-ggplot(df_MFA_nodes_2,
+ggplot(df_MFA_nodes_2, label=Node,
        aes(x=Dim1_overall, y=Dim2_overall))+
   geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
   geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
@@ -216,8 +213,8 @@ ggplot(df_MFA_nodes_2,
              aes(x=Dim1, y=Dim2, color=`Psychology (auto)`))+
   scale_color_viridis(direction = -1, option = "D")+
   geom_point(shape=1, aes(size=Contrib1_2))+
-  geom_text_repel(data= subset(df_MFA_nodes_2, Contrib1_2 > 3.8),
-                  aes(label=Node),
+  geom_text_repel(data = filter(df_MFA_nodes_2, Contrib1_2 > 3.8),
+                  aes(label=Node), 
                   point.padding = 0.25, box.padding = 0.5)+
   labs(size="Contribution", color="Mentions of psychology",
        x="Dim 1: 'Discipline' (8.78%)", y="Dim 2: 'Audience' (7.78%)")+
@@ -233,7 +230,7 @@ ggplot(df_MFA_articles_3,
   scale_color_viridis(direction = -1)+
   geom_point(data = df_MFA_nodes_3, shape=1,
              aes(x=Dim1, y=Dim2, size=Contrib1_2, group=Year))+
-  geom_text_repel(data= subset(df_MFA_nodes_3, Contrib1_2 > 3.5), 
+  geom_text_repel(data= subset(df_MFA_nodes_3, Contrib1_2 > 4), 
                   aes(label=Node),
                   point.padding = 0.25, box.padding = 0.5)+
   facet_wrap(~Year)+
