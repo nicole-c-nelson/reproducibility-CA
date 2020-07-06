@@ -174,7 +174,7 @@ view(coverage_CA_result$col$contrib)
 
 dimdesc_1_3 <- dimdesc(coverage_CA_result, axes = 1:3, proba = 0.01) #create dimension descriptions
 
-view(dimdesc_1_3$"Dim 1"$quali) #output dimension descriptions
+view(dimdesc_1_3$"Dim 2"$quali) #output dimension descriptions
 view(dimdesc_1_3$"Dim 1"$category)
 view(dimdesc_1_3$`Dim 1`$quanti)
 
@@ -257,8 +257,12 @@ node_coord <- data.frame("Dim_1" = node_coord_1,
   rownames_to_column(var = "Name") %>%
   mutate("Contrib_1_2" = Contrib_1 + Contrib_2) %>%
   mutate("Contrib_1_3" = Contrib_1 + Contrib_3) %>%
-  mutate("Cos2_1_2" = Cos2_1 + Cos2_2)%>%
-  mutate("Cos2_1_3" = Cos2_1 + Cos2_3)
+  mutate("Contrib_1_2_3" = Contrib_1 + Contrib_2 + Contrib_3) %>%
+  mutate("Cos2_1_2" = Cos2_1 + Cos2_2) %>%
+  mutate("Cos2_1_3" = Cos2_1 + Cos2_3) %>%
+  mutate("Cos2_1_2_3" = Cos2_1 + Cos2_2 + Cos2_3)
+    
+    
 
 HCPC_labels <- rownames(coverage_HCPC_result$data.clust)
 coverage_HCPC_clusters <- as_tibble(coverage_HCPC_result$data.clust) %>%
@@ -427,6 +431,17 @@ show(which(coverage_MFA_aud_result$freq$coord[,2]>1.5)) #finding articles that a
 show(which(coverage_MFA_aud_result$freq$coord[,2]<(-0.6)))
 view(coverage_MFA_aud_result$freq$coord)
 view(coverage_MFA_aud_result$ind$contrib)
+view(coverage_MFA_aud_result$inertia.ratio)
+
+aud_within_inertia_1 <- coverage_MFA_aud_result$ind$within.inertia[,1]
+aud_within_inertia_2 <- coverage_MFA_aud_result$ind$within.inertia[,2]
+aud_within_inertia_labels <- rownames(coverage_MFA_aud_result$ind$within.inertia)
+
+aud_within_inertia <- data_frame("Dim_1" = aud_within_inertia_1,
+                                 "Dim_2" = aud_within_inertia_2) %>%
+  `rownames<-`(aud_within_inertia_labels) %>%
+  rownames_to_column(var = "Node") %>%
+  mutate(Dim_1_2 = Dim_1 + Dim_2)
 
 #MFA on data sorted by author
 Factoshiny(df_coverage_sorted_by_auth_2)
@@ -442,6 +457,19 @@ plot.MFA(coverage_MFA_auth_result,
          habillage='group',
          title="MFA by author, 10 most contributing nodes",
          cex=0.55,cex.main=0.55,cex.axis=0.55)
+
+view(coverage_MFA_auth_result$ind$within.inertia)
+view(coverage_MFA_auth_result$inertia.ratio)
+
+auth_within_inertia_1 <- coverage_MFA_auth_result$ind$within.inertia[,1]
+auth_within_inertia_2 <- coverage_MFA_auth_result$ind$within.inertia[,2]
+auth_within_inertia_labels <-rownames(coverage_MFA_auth_result$ind$within.inertia)
+
+auth_within_inertia <- data_frame("Dim_1" = auth_within_inertia_1,
+                                  "Dim_2" = auth_within_inertia_2) %>%
+  `rownames<-`(auth_within_inertia_labels) %>%
+  rownames_to_column(var = "Node") %>%
+  mutate(Dim_1_2 = Dim_1 + Dim_2)
 
 ##Mean article profile by year
 #Create data frame for mean article profiles

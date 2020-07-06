@@ -1,0 +1,323 @@
+library(tidyverse)
+library(fs)
+library(readxl)
+library(FactoMineR)
+library(ggplot2)
+library(viridis)
+library(ggrepel)
+
+##Read IRR and node summary files
+IRR_files <- dir_ls("Data/IRR files") #create list of all files in the IRR data folder
+summary_files <- dir_ls("Data/Node summary files 2020-05-21") #create list of all files in node summary data folder
+
+
+##Create IRR data frame
+df_IRR <- IRR_files %>%
+  map_dfr(read_csv, .id = "rater") %>% #read in every file; add "rater" variable based on file name
+  select(Name, rater, Kappa) %>% #select three relevant variables
+  mutate(rater = str_sub(rater, start = 16, end = -15)) %>% #fix name of "rater"
+  filter(!grepl(":", Name)) %>% #remove IRR scores for individual articles, leaving only node summary scores
+  pivot_wider(names_from = "rater", values_from = "Kappa") %>% #switch to wide data format
+  mutate(Name = str_extract(Name, "[^\\\\.]+$")) %>% #fix name of nodes
+  na.omit(.) %>% #get rid of rows with NA values
+  mutate(Ave_Kappa = rowMeans(.[,-1])) %>% #calculate average Kappa, excluding Name column
+  mutate_if(is.numeric, round, 2) %>% #round to two decimal places
+  arrange(Ave_Kappa) #sort by average Kappa
+
+
+##Create metadata data frame
+#Create initial metadata data frame and clean up Name column
+df_metadata <- read.csv("Data/Metadata 2020-05-26.csv") %>%
+  rename(Name = X)
+
+df_metadata <- df_metadata %>% 
+  mutate(Name = str_replace(df_metadata$Name, 
+                            "[0-9]*[:blank:]\\:[:blank:]", ""))
+
+# fix column names 
+# get vector of current column names
+n <- names(df_metadata)
+
+# fix year columns
+# detect elements that have four digits in a row, then replace with those four digits
+n2 <- ifelse(str_detect(n, "[[:digit:]]{4}") == TRUE, #test condition
+             str_extract(n, "[[:digit:]]{4}"), #yes: extract those 4 digits
+             n) #no: don't change the element
+
+#remove the junk in front of the other column names
+n3 <- ifelse(str_detect(n2, "\\.{3}.+$") == TRUE, #test condition: has ...
+             str_extract(n2, "(?<=aa(Terms|Audience|Journalist)\\.{3}).*"), #yes: extract those 4 digits
+             n2) #no: don't change the element
+
+#assign new column names back to df_metadata
+colnames(df_metadata) <- n3
+
+#create column for publication year
+df_metadata_2 <- df_metadata %>%
+  pivot_longer(cols = matches("[[:digit:]]{4}")) %>% #pivot all column with 4 digits in them
+  mutate(value = replace(name, value == 0, NA)) %>% #replace cells that have 0 with NA
+  drop_na(value) %>% #drop NAs in value
+  pivot_wider() %>% #pivot to wide 
+  pivot_longer(cols = matches("[[:digit:]]{4}"), #pivot columns with year
+               names_to = "year") %>% #into a new "year" column
+  drop_na(value) %>% #drop rows that have a value of NA
+  select(-value) #drop value column
+
+#create variable for audience
+df_metadata_3 <-  df_metadata_2 %>% 
+  pivot_longer(2:3) %>% #pivot the two audience variables
+  mutate(value = replace(name, value == 0, NA)) %>% #replace cells that have 0 with NA
+  drop_na(value) %>%
+  select(-value) %>% 
+  rename(audience = name)
+
+#create variable for author
+df_metadata_4 <- df_metadata_3 %>% 
+  pivot_longer(2:4) %>% 
+  mutate(value = replace(name, value == 0, NA)) %>% #replace cells that have 0 with NA
+  drop_na(value) %>%
+  select(-value) %>% 
+  rename(author = name)
+
+#create variable for term
+df_metadata_5 <- df_metadata_4 %>% 
+  pivot_longer(2:46) %>% 
+  mutate(value = replace(name, value == 0, NA)) %>% #replace cells that have 0 with NA
+  drop_na(value) %>%
+  select(-value) %>% 
+  rename(term = name)
+
+#create variable for reproducibility/replication
+df_metadata_6 <- df_metadata_5 %>% 
+  mutate(term = fct_collapse(term,
+                              "reproducibility" = c("Reproducibility", 
+                                                    "Reproducibility.crisis", 
+                                                    "Irreproducibility", 
+                                                    "Data.reproducibility.crisis"),
+                              "replication" = c("Replication.replicability",
+                                                "Replication.crisis",
+                                                "Replicability.Crisis"), 
+                              other_level = "other"))
+
+#check for articles that have missing metadata
+df_metadata_2 %>% 
+  anti_join(df_metadata_6, by = "Name") %>% 
+  select(Name)
+
+##Use IRR scores to select nodes from the coverage data frame
+#Create coverage data frame
+df_coverage <- summary_files %>%
+  map_dfr(read_xlsx, .id = "node") %>% #read in every file; add "node" variable based on file name
+  select(node, Name, Coverage) %>% #select 3 relevant variables
+  mutate(node = str_sub(node, start = 36, end = -6)) %>% #fix name of nodes
+  pivot_wider(names_from = "node", values_from = "Coverage", values_fill = list(Coverage = 0)) #switch to wide data format; fill empty cells with 0
+
+#Create a data frame of nodes reaching the IRR threshold
+df_IRR_2 <- df_IRR %>%
+  select(Name, Ave_Kappa) %>% #select node name and average kappa score
+  filter(Ave_Kappa >= 0.60) %>% #select all nodes with an average Kappa of greater than 0.60
+  pivot_wider(names_from = Name, values_from = Ave_Kappa) %>% #pivot so that node names become the variables rather than the rows
+  select(-starts_with("Overall")) %>% #get rid of overall average Kappa score as a variable
+  mutate(Name = NA)  #add a blank column to this data frame to match up with the "Name" variable in the count and coverage data frames
+
+#Use this IRR threshold data frame to filter the coverage data frame
+df_coverage_2 <- df_coverage %>%
+  select(colnames(df_IRR_2)) %>% #select nodes matching those in the IRR threshold data frame
+  select(Name, everything()) 
+
+#join metadata to coverage dataframe
+df_coverage_3 <- inner_join(df_coverage_2, df_metadata_6, by = "Name")
+
+#join auto-coded nodes to coverage dataframe
+df_auto_code <-select(df_coverage, Name, contains("(auto)"))
+df_coverage_4 <-inner_join(df_coverage_3, df_auto_code, by = "Name")
+
+#set article names to row names for FactomineR analysis
+df_coverage_5 <- df_coverage_4 %>%
+  column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
+
+
+##Create data frames for MFA
+df_coverage_sorted_by_auth <- df_coverage_3 %>%
+  arrange(author) %>%
+  select(-c(31:34)) %>%
+  column_to_rownames(var = "Name")
+
+df_coverage_sorted_by_auth_2 <- data.frame(t(df_coverage_sorted_by_auth))
+
+df_coverage_sorted_by_aud <- df_coverage_3 %>%
+  arrange(audience) %>%
+  select(-c(31:34)) %>%
+  column_to_rownames(var = "Name")
+
+df_coverage_sorted_by_aud_2 <- data.frame(t(df_coverage_sorted_by_aud))
+
+
+##Analysis with FactoMineR
+#Correspondence analysis 
+CA_result <- CA(df_coverage_5, #perform CA
+                         quali.sup = c(30,31,32,33), #define qualitative variables as supplementary
+                         quanti.sup = c(34,35,36,37,38,39),
+                         ncp=18, #retain first 18 dimensions (for later clustering)
+                         graph = FALSE) 
+
+#Clustering 
+HCPC_result <- HCPC(CA_result, nb.clust=4, consol=TRUE, graph=FALSE) #perform clustering
+
+#MFA on data sorted by audience
+MFA_aud_result <-MFA(df_coverage_sorted_by_aud_2,
+                              group=c(136,217),type=c('f','f'),
+                              name.group=c('Popular', 'Scientific'),
+                              num.group.sup=c(),graph=FALSE)
+
+MFA_auth_result <-MFA(df_coverage_sorted_by_auth_2,
+                               group=c(120,25,208),type=c('f','f','f'),
+                               name.group=c('Journalist', 'Other', 'Scientist'),
+                               num.group.sup=c(2),graph=FALSE)
+
+##Figure 1
+#Create data frame of article attributes
+df_article_attrib <- group_by(df_coverage_3, audience, author, year) %>%
+  tally()
+
+
+##Figure 2
+##Extract data from the CA and clustering objects to use for ggplot
+article_coord_1 <- CA_result$row$coord[,1]
+article_coord_2 <- CA_result$row$coord[,2]
+article_coord_3 <- CA_result$row$coord[,3]
+article_labels <- rownames(CA_result$row$coord)
+
+node_coord_1 <- CA_result$col$coord[,1]
+node_coord_2 <- CA_result$col$coord[,2]
+node_coord_3 <- CA_result$col$coord[,3]
+node_contrib_1 <- CA_result$col$contrib[,1]
+node_contrib_2 <- CA_result$col$contrib[,2]
+node_contrib_3 <- CA_result$col$contrib[,3]
+node_cos2_1 <- CA_result$col$cos2[,1]
+node_cos2_2 <- CA_result$col$cos2[,2]
+node_cos2_3 <- CA_result$col$cos2[,3]
+node_labels <- rownames(CA_result$col$coord)
+
+sup_coord_1 <- CA_result$quanti.sup$coord[,1]
+sup_coord_2 <- CA_result$quanti.sup$coord[,2]
+sup_labels <- rownames(CA_result$quanti.sup$coord)
+
+quali_sup_coord_1 <-CA_result$quali.sup$coord[,1]
+quali_sup_coord_2 <-CA_result$quali.sup$coord[,2]
+quali_sup_labels <- rownames(CA_result$quali.sup$coord)
+
+df_CA_article_coord <- data.frame("Dim_1" = article_coord_1, 
+                            "Dim_2" = article_coord_2,
+                            "Dim_3" = article_coord_3) %>%
+  `rownames<-`(article_labels) %>%
+  rownames_to_column(var = "Name")
+
+df_CA_results_nodes <- data.frame("Dim_1" = node_coord_1, 
+                         "Dim_2" = node_coord_2,
+                         "Dim_3" = node_coord_3,
+                         "Contrib_1" = node_contrib_1, 
+                         "Contrib_2" = node_contrib_2,
+                         "Contrib_3" = node_contrib_3,
+                         "Cos2_1" = node_cos2_1,
+                         "Cos2_2" = node_cos2_2,
+                         "Cos2_3" = node_cos2_3) %>%
+  `rownames<-`(node_labels) %>%
+  rownames_to_column(var = "Name") %>%
+  mutate("Contrib_1_2" = Contrib_1 + Contrib_2) %>%
+  mutate("Contrib_1_3" = Contrib_1 + Contrib_3) %>%
+  mutate("Cos2_1_2" = Cos2_1 + Cos2_2) %>%
+  mutate("Cos2_1_3" = Cos2_1 + Cos2_3)
+
+HCPC_labels <- rownames(HCPC_result$data.clust)
+df_HCPC_clusters <- as_tibble(HCPC_result$data.clust) %>%
+  `rownames<-`(HCPC_labels) %>%
+  rownames_to_column(var = "Name") %>%
+  select(Name, clust) 
+
+df_CA_results_articles <- inner_join(df_CA_article_coord, df_metadata_6, by = "Name")
+df_CA_results_articles_2 <- inner_join(df_CA_results_articles, df_HCPC_clusters, by = "Name")
+
+df_CA_quant_sup_var <- data_frame("Dim_1" = sup_coord_1,
+                              "Dim_2" = sup_coord_2) %>%
+  `rownames<-`(sup_labels) %>%
+  rownames_to_column(var = "Name") %>%
+  filter(Name == "Psychology (auto)" | Name == "NIH (auto)") %>%
+  mutate(Name = str_remove(Name, "\\(auto\\)"))
+
+df_CA_quali_sup_var <- data_frame("Dim_1" = quali_sup_coord_1,
+                              "Dim_2" = quali_sup_coord_2) %>%
+  `rownames<-`(quali_sup_labels) %>%
+  rownames_to_column(var = "Name") %>%
+  filter(grepl("repro_repli.rep|audience", Name)) %>%
+  mutate(Name = str_remove(Name, "repro_repli.")) %>%
+  mutate(Name = str_remove(Name, "audience."))
+
+df_CA_results_sup_var <- bind_rows(df_CA_quali_sup_var, df_CA_quant_sup_var)
+
+#Plot Fig 2a using ggplot
+ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_2)) +
+  theme_bw()+
+  geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
+  geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
+  geom_point(aes(color = term)) +
+  scale_color_viridis(discrete = TRUE, option = "D")+
+  geom_point(data = df_CA_results_nodes, aes(Dim_1, Dim_2, size=Contrib_1_2), shape = 1)+
+  geom_text_repel(data = subset(df_CA_results_nodes, Contrib_1_2 > 4), 
+                  aes(label = Name), point.padding = 0.25, box.padding = 0.75)+
+  geom_point(data=df_CA_results_sup_var, shape=3, color="red",
+             aes(x=Dim_1, y=Dim_2))+
+  geom_text_repel(data=df_CA_results_sup_var, color="red",
+                  aes(label = Name), point.padding = 0.25, box.padding = 0.5)+
+  labs(size="Contribution",color="Terms",
+       x="Dim 1: 'Discipline' (8.50%)", y="Dim 2: 'Audience' (7.73%)")+
+  theme(legend.position = "bottom")
+
+#Plot Fig 2b using ggplot
+ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_3))+
+  theme_bw()+
+  geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
+  geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
+  geom_point(aes(color = clust))+
+  scale_color_viridis(discrete = TRUE, option = "D", direction = -1)+
+  geom_point(data = df_CA_results_nodes, aes(Dim_1, Dim_3, size=Contrib_1_3), shape = 1)+
+  geom_text_repel(data = subset(df_CA_results_nodes, Contrib_1_3 > 1.9), 
+                  aes(label = Name), point.padding = 0.25, box.padding = 0.5)+
+  labs(size="Contribution", color="Cluster",
+       x="Dim 1: 'Discipine' (8.50%)", y="Dim 3: 'Pereceptions of variation' (6.95%)")+
+  theme(legend.position = "bottom")
+
+
+##Figure 3
+##Extract data from the MFA objects to use for ggplot
+MFA_auth_article_coord_1 <- MFA_auth_result$freq$coord[,1]
+MFA_auth_article_coord_2 <- MFA_auth_result$freq$coord[,2]
+MFA_auth_article_labels <- rownames(MFA_auth_result$freq$coord)
+
+MFA_auth_node_coord_1 <- MFA_auth_result$ind$coord[,1]
+MFA_auth_node_coord_2 <- MFA_auth_result$ind$coord[,2]
+MFA_auth_node_labels <- rownames(MFA_auth_result$ind$coord)
+
+MFA_auth_node_partial_coord_1 <- MFA_auth_result$ind$coord.partiel[,1]
+MFA_auth_node_partial_coord_2 <- MFA_auth_result$ind$coord.partiel[,2]                               
+MFA_auth_node_partial_coord_labels <- rownames(MFA_aud_result$ind$coord.partiel)
+
+MFA_auth_node_within_inertia_1 <- MFA_auth_result$ind$within.inertia[,1]
+MFA_auth_node_within_inertia_2 <- MFA_auth_result$ind$within.inertia[,2]
+MFA_auth_node_within_inertia_labels <- rownames(MFA_auth_result$ind$within.inertia)
+
+df_MFA_auth_result_articles <- data_frame("Dim_1" = MFA_auth_article_coord_1,
+                                          "Dim_2" = MFA_auth_article_coord_2) %>%
+  `rownames<-`(MFA_auth_article_labels) %>%
+  rownames_to_column(var = "Name")
+
+df_MFA_auth_result_nodes <- data_frame("Dim_1" = MFA_auth_node_coord_1,
+                                       "Dim_2" = MFA_auth_node_coord_2) %>%
+  `rownames<-`(MFA_auth_node_labels) %>%
+  rownames_to_column(var = "Node")
+
+df_MFA_auth_result_within_inertia <- data_frame("Within_Inertia_Dim_1" = MFA_auth_node_within_inertia_1,
+                                       "Within_Inertia_Dim_2" = MFA_auth_node_within_inertia_2) %>%
+  `rownames<-`(MFA_auth_node_within_inertia_labels) %>%
+  rownames_to_column(var = "Node")
+
