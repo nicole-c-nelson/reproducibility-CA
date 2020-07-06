@@ -6,12 +6,12 @@ library(ggplot2)
 library(viridis)
 library(ggrepel)
 
-##Read IRR and node summary files
+###Read IRR and node summary files
 IRR_files <- dir_ls("Data/IRR files") #create list of all files in the IRR data folder
 summary_files <- dir_ls("Data/Node summary files 2020-05-21") #create list of all files in node summary data folder
 
 
-##Create IRR data frame
+###Create IRR data frame
 df_IRR <- IRR_files %>%
   map_dfr(read_csv, .id = "rater") %>% #read in every file; add "rater" variable based on file name
   select(Name, rater, Kappa) %>% #select three relevant variables
@@ -21,11 +21,10 @@ df_IRR <- IRR_files %>%
   mutate(Name = str_extract(Name, "[^\\\\.]+$")) %>% #fix name of nodes
   na.omit(.) %>% #get rid of rows with NA values
   mutate(Ave_Kappa = rowMeans(.[,-1])) %>% #calculate average Kappa, excluding Name column
-  mutate_if(is.numeric, round, 2) %>% #round to two decimal places
   arrange(Ave_Kappa) #sort by average Kappa
 
 
-##Create metadata data frame
+###Create metadata data frame
 #Create initial metadata data frame and clean up Name column
 df_metadata <- read.csv("Data/Metadata 2020-05-26.csv") %>%
   rename(Name = X)
@@ -104,7 +103,7 @@ df_metadata_2 %>%
   anti_join(df_metadata_6, by = "Name") %>% 
   select(Name)
 
-##Use IRR scores to select nodes from the coverage data frame
+###Use IRR scores to select nodes from the coverage data frame
 #Create coverage data frame
 df_coverage <- summary_files %>%
   map_dfr(read_xlsx, .id = "node") %>% #read in every file; add "node" variable based on file name
@@ -137,7 +136,7 @@ df_coverage_5 <- df_coverage_4 %>%
   column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
 
 
-##Create data frames for MFA
+###Create data frames for MFA
 df_coverage_sorted_by_auth <- df_coverage_3 %>%
   arrange(author) %>%
   select(-c(31:34)) %>%
@@ -153,7 +152,7 @@ df_coverage_sorted_by_aud <- df_coverage_3 %>%
 df_coverage_sorted_by_aud_2 <- data.frame(t(df_coverage_sorted_by_aud))
 
 
-##Analysis with FactoMineR
+###Analysis with FactoMineR
 #Correspondence analysis 
 CA_result <- CA(df_coverage_5, #perform CA
                          quali.sup = c(30,31,32,33), #define qualitative variables as supplementary
@@ -181,7 +180,7 @@ df_article_attrib <- group_by(df_coverage_3, audience, author, year) %>%
   tally()
 
 
-##Figure 2
+###Figure 2
 ##Extract data from the CA and clustering objects to use for ggplot
 article_coord_1 <- CA_result$row$coord[,1]
 article_coord_2 <- CA_result$row$coord[,2]
@@ -288,36 +287,105 @@ ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_3))+
   theme(legend.position = "bottom")
 
 
-##Figure 3
+###Figure 3
 ##Extract data from the MFA objects to use for ggplot
-MFA_auth_article_coord_1 <- MFA_auth_result$freq$coord[,1]
-MFA_auth_article_coord_2 <- MFA_auth_result$freq$coord[,2]
-MFA_auth_article_labels <- rownames(MFA_auth_result$freq$coord)
-
-MFA_auth_node_coord_1 <- MFA_auth_result$ind$coord[,1]
-MFA_auth_node_coord_2 <- MFA_auth_result$ind$coord[,2]
-MFA_auth_node_labels <- rownames(MFA_auth_result$ind$coord)
-
-MFA_auth_node_partial_coord_1 <- MFA_auth_result$ind$coord.partiel[,1]
-MFA_auth_node_partial_coord_2 <- MFA_auth_result$ind$coord.partiel[,2]                               
-MFA_auth_node_partial_coord_labels <- rownames(MFA_aud_result$ind$coord.partiel)
-
-MFA_auth_node_within_inertia_1 <- MFA_auth_result$ind$within.inertia[,1]
-MFA_auth_node_within_inertia_2 <- MFA_auth_result$ind$within.inertia[,2]
-MFA_auth_node_within_inertia_labels <- rownames(MFA_auth_result$ind$within.inertia)
-
-df_MFA_auth_result_articles <- data_frame("Dim_1" = MFA_auth_article_coord_1,
-                                          "Dim_2" = MFA_auth_article_coord_2) %>%
-  `rownames<-`(MFA_auth_article_labels) %>%
+#Create data frames for MFA by author
+df_MFA_auth_articles <- as.data.frame(MFA_auth_result$freq$coord) %>%
   rownames_to_column(var = "Name")
 
-df_MFA_auth_result_nodes <- data_frame("Dim_1" = MFA_auth_node_coord_1,
-                                       "Dim_2" = MFA_auth_node_coord_2) %>%
-  `rownames<-`(MFA_auth_node_labels) %>%
+df_MFA_auth_within_inertia <- as.data.frame(MFA_auth_result$ind$within.inertia)%>%
+  rownames_to_column(var = "Node") %>%
+  mutate(Within_inert_1_2 = Dim.1 + Dim.2) %>%
+  select(Node, Within_inert_1_2)
+
+df_MFA_auth_nodes <- as.data.frame(MFA_auth_result$ind$coord)%>%
   rownames_to_column(var = "Node")
 
-df_MFA_auth_result_within_inertia <- data_frame("Within_Inertia_Dim_1" = MFA_auth_node_within_inertia_1,
-                                       "Within_Inertia_Dim_2" = MFA_auth_node_within_inertia_2) %>%
-  `rownames<-`(MFA_auth_node_within_inertia_labels) %>%
+df_MFA_auth_part_points <- as.data.frame(MFA_auth_result$ind$coord.partiel)%>%
+  rownames_to_column(var = "Node") %>%
+  mutate(Author = Node) %>%
+  mutate(Node = str_remove(Node, "\\..*")) %>% 
+  mutate(Author = str_remove(Author, "^.*\\.")) %>%
+  select(Node, Author, Dim.1, Dim.2) %>%
+  pivot_wider(names_from = Author, values_from = c(Dim.1, Dim.2))
+
+df_MFA_auth_nodes_2 <- inner_join(df_MFA_auth_within_inertia, df_MFA_auth_nodes, by = "Node")
+
+df_MFA_auth_nodes_3 <- inner_join(df_MFA_auth_nodes_2, df_MFA_auth_part_points, by = "Node") %>%
+  rename(Dim.1_Mean = Dim.1) %>%
+  rename(Dim.2_Mean = Dim.2) %>%
+  select(-c(Dim.3, Dim.4, Dim.5)) %>%
+  pivot_longer(-c(Node, Within_inert_1_2), 
+               names_to = c("Dim", "Point_type"),
+               names_pattern = "(.*)_(.*)",
+               values_to = "Value") %>%
+  pivot_wider(names_from = Dim, values_from = Value)
+
+#Create data frames for MFA by audience
+df_MFA_aud_articles <- as.data.frame(MFA_aud_result$freq$coord) %>%
+  rownames_to_column(var = "Name")
+
+df_MFA_aud_within_inertia <- as.data.frame(MFA_aud_result$ind$within.inertia)%>%
+  rownames_to_column(var = "Node") %>%
+  mutate(Within_inert_1_2 = Dim.1 + Dim.2) %>%
+  select(Node, Within_inert_1_2)
+
+df_MFA_aud_nodes <- as.data.frame(MFA_aud_result$ind$coord)%>%
   rownames_to_column(var = "Node")
 
+df_MFA_aud_part_points <- as.data.frame(MFA_aud_result$ind$coord.partiel)%>%
+  rownames_to_column(var = "Node") %>%
+  mutate(Author = Node) %>%
+  mutate(Node = str_remove(Node, "\\..*")) %>% 
+  mutate(Author = str_remove(Author, "^.*\\.")) %>%
+  select(Node, Author, Dim.1, Dim.2) %>%
+  pivot_wider(names_from = Author, values_from = c(Dim.1, Dim.2))
+
+df_MFA_aud_nodes_2 <- inner_join(df_MFA_aud_within_inertia, df_MFA_aud_nodes, by = "Node")
+
+df_MFA_aud_nodes_3 <- inner_join(df_MFA_aud_nodes_2, df_MFA_aud_part_points, by = "Node") %>%
+  rename(Dim.1_Mean = Dim.1) %>%
+  rename(Dim.2_Mean = Dim.2) %>%
+  select(-c(Dim.3, Dim.4, Dim.5)) %>%
+  pivot_longer(-c(Node, Within_inert_1_2), 
+               names_to = c("Dim", "Point_type"),
+               names_pattern = "(.*)_(.*)",
+               values_to = "Value") %>%
+  pivot_wider(names_from = Dim, values_from = Value)
+
+#Plot Fig 3a using ggplot
+ggplot(df_MFA_auth_nodes_3, aes(Dim.1, Dim.2))+
+  theme_bw()+
+  geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
+  geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
+  geom_point(data=df_MFA_auth_articles, aes(Dim.1, Dim.2), alpha=0.20)+
+  geom_point(data=subset(df_MFA_auth_nodes_3, Point_type=="Mean"),
+    aes(size=Within_inert_1_2),shape = 1)+
+  geom_point(data=subset(df_MFA_auth_nodes_3, Within_inert_1_2 > 4 & Point_type=="Scientist"
+                         | Within_inert_1_2 > 4 & Point_type=="Journalist"),
+             aes(color=Point_type), size=3)+
+  scale_color_viridis(discrete = TRUE, option = "D")+
+  geom_line(data = subset(df_MFA_auth_nodes_3, Within_inert_1_2 > 4),
+            aes(group=Node), linetype=2)+
+  geom_text_repel(data = subset(df_MFA_auth_nodes_3, Point_type=="Mean" & Within_inert_1_2 > 4),
+                  aes(label=Node), point.padding = 0.25, box.padding = 0.5)+
+  theme(legend.position = "bottom")
+  
+#Plot Fig 3b using ggplot
+ggplot(df_MFA_aud_nodes_3, aes(Dim.1, Dim.2))+
+  theme_bw()+
+  geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
+  geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
+  geom_point(data=df_MFA_aud_articles, aes(Dim.1, Dim.2), alpha=0.20)+
+  geom_point(data=subset(df_MFA_aud_nodes_3, Point_type=="Mean"),
+             aes(size=Within_inert_1_2),shape = 1)+
+  geom_point(data=subset(df_MFA_aud_nodes_3, Within_inert_1_2 > 9 & Point_type=="Scientific"
+                         | Within_inert_1_2 > 9 & Point_type=="Popular"),
+             aes(color=Point_type), size=3)+
+  scale_color_viridis(discrete = TRUE, option = "D")+
+  geom_line(data = subset(df_MFA_aud_nodes_3, Within_inert_1_2 > 9),
+            aes(group=Node), linetype=2)+
+  geom_text_repel(data = subset(df_MFA_aud_nodes_3, Point_type=="Mean" & Within_inert_1_2 > 9),
+                  aes(label=Node), point.padding = 0.25, box.padding = 0.5)+
+  theme(legend.position = "bottom")
+  
