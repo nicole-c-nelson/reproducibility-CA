@@ -239,8 +239,7 @@ article_coord <- data.frame("Dim_1" = article_coord_1,
                             "Dim_2" = article_coord_2,
                             "Dim_3" = article_coord_3,
                             "Dim_4" = article_coord_4) %>%
-  `rownames<-`(article_labels) %>%
-  rownames_to_column(var = "Name")
+  mutate(Name = article_labels)
 
 node_coord <- data.frame("Dim_1" = node_coord_1, 
                          "Dim_2" = node_coord_2,
@@ -253,8 +252,7 @@ node_coord <- data.frame("Dim_1" = node_coord_1,
                          "Cos2_1" = node_cos2_1,
                          "Cos2_2" = node_cos2_2,
                          "Cos2_3" = node_cos2_3) %>%
-  `rownames<-`(node_labels) %>%
-  rownames_to_column(var = "Name") %>%
+  mutate(Name = node_labels) %>% 
   mutate("Contrib_1_2" = Contrib_1 + Contrib_2) %>%
   mutate("Contrib_1_3" = Contrib_1 + Contrib_3) %>%
   mutate("Contrib_1_2_3" = Contrib_1 + Contrib_2 + Contrib_3) %>%
@@ -264,23 +262,19 @@ node_coord <- data.frame("Dim_1" = node_coord_1,
     
     
 
-HCPC_labels <- rownames(coverage_HCPC_result$data.clust)
 coverage_HCPC_clusters <- as_tibble(coverage_HCPC_result$data.clust) %>%
-  `rownames<-`(HCPC_labels) %>%
-  rownames_to_column(var = "Name") %>%
-  select(Name, clust) 
+  mutate(Name = rownames(coverage_HCPC_result$data.clust)) %>% 
+  select(Name, clust)
 
 quant_sup_coord <- data_frame("Dim_1" = sup_coord_1,
                          "Dim_2" = sup_coord_2) %>%
-  `rownames<-`(sup_labels) %>%
-  rownames_to_column(var = "Name") %>%
+  mutate(Name = sup_labels) %>% 
   filter(Name == "Psychology (auto)" | Name == "NIH (auto)") %>%
   mutate(Name = str_remove(Name, "\\(auto\\)"))
 
 quali_sup_coord <- data_frame("Dim_1" = quali_sup_coord_1,
                               "Dim_2" = quali_sup_coord_2) %>%
-  `rownames<-`(quali_sup_labels) %>%
-  rownames_to_column(var = "Name") %>%
+  mutate(Name = quali_sup_labels) %>% 
   filter(grepl("repro_repli.rep|audience", Name)) %>%
   mutate(Name = str_remove(Name, "repro_repli.")) %>%
   mutate(Name = str_remove(Name, "audience."))
