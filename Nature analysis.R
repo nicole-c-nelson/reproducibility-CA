@@ -13,7 +13,7 @@ IRR_files <- dir_ls("Data/IRR files") #create list of all files in the IRR data 
 summary_files <- dir_ls("Data/Node summary files 2020-05-21") #create list of all files in node summary data folder
 
 
-###Create IRR data frame
+# Create IRR data frame ---------------------------------------------------
 df_IRR <- IRR_files %>%
   map_dfr(read_csv, .id = "rater") %>% #read in every file; add "rater" variable based on file name
   select(Name, rater, Kappa) %>% #select three relevant variables
@@ -26,7 +26,7 @@ df_IRR <- IRR_files %>%
   arrange(Ave_Kappa) #sort by average Kappa
 
 
-###Create metadata data frame
+# Create metadata data frame ----------------------------------------------
 #Create initial metadata data frame and clean up Name column
 df_metadata <- read.csv("Data/Metadata 2020-05-26.csv") %>%
   rename(Name = X)
@@ -106,8 +106,9 @@ df_metadata_2 %>%
   anti_join(df_metadata_6, by = "Name") %>% 
   select(Name)
 
-###Use IRR scores to select nodes from the coverage data frame
-#Create coverage data frame
+
+
+# Create coverage data frame ----------------------------------------------
 df_coverage <- summary_files %>%
   map_dfr(read_xlsx, .id = "node") %>% #read in every file; add "node" variable based on file name
   select(node, Name, Coverage) %>% #select 3 relevant variables
@@ -140,7 +141,7 @@ df_coverage_5 <- df_coverage_4 %>%
   column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
 
 
-###Create data frames for MFA
+# Create data frames for MFA ----------------------------------------------
 df_coverage_sorted_by_auth <- df_coverage_3 %>%
   arrange(author) %>%
   select(-c(31:34)) %>%
@@ -156,7 +157,8 @@ df_coverage_sorted_by_aud <- df_coverage_3 %>%
 df_coverage_sorted_by_aud_2 <- data.frame(t(df_coverage_sorted_by_aud))
 
 
-###Analysis with FactoMineR
+
+# Analysis with FactoMineR ------------------------------------------------
 #Correspondence analysis 
 CA_result <- CA(df_coverage_5, #perform CA
                          quali.sup = c(30,31,32,33), #define qualitative variables as supplementary
@@ -178,7 +180,8 @@ MFA_auth_result <-MFA(df_coverage_sorted_by_auth_2,
                                name.group=c('Journalist', 'Other', 'Scientist'),
                                num.group.sup=c(2),graph=FALSE)
 
-##Figure 1
+
+# Figure 1 ----------------------------------------------------------------
 #Create data frames of article attributes
 df_article_attrib <- df_coverage_3 %>%
   mutate(Audience = str_remove(audience, "\\..*")) %>%
@@ -211,8 +214,9 @@ ggplot(df_article_attrib_2, aes(fill=Audience, x=year, y=n))+
   theme_bw()+
   theme(legend.position = "bottom")
 
-###Figure 2
-##Extract data from the CA and clustering objects to use for ggplot
+
+# Figure 2 ----------------------------------------------------------------
+#Extract data from the CA and clustering objects to use for ggplot
 article_coord_1 <- CA_result$row$coord[,1]
 article_coord_2 <- CA_result$row$coord[,2]
 article_coord_3 <- CA_result$row$coord[,3]
@@ -318,8 +322,7 @@ ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_3))+
   theme(legend.position = "bottom")
 
 
-###Figure 3
-##Extract data from the MFA objects to use for ggplot
+# Figure 3 ----------------------------------------------------------------
 #Create data frames for MFA by author results
 df_MFA_auth_articles <- as.data.frame(MFA_auth_result$freq$coord) %>%
   rownames_to_column(var = "Name")
@@ -421,7 +424,8 @@ ggplot(df_MFA_aud_nodes_3, aes(Dim.1, Dim.2))+
   theme(legend.position = "bottom")
 
 
-###Supplementary table 1
+# Supplementary figures and tables ----------------------------------------
+#Supplementary table 1
 df_supp_table_1 <- df_IRR %>%
   mutate_if(is.numeric, round, 2) %>%
   filter(!grepl("Overall", Name)) 
@@ -431,7 +435,7 @@ ggplot(df_supp_table_1, aes(x=Ave_Kappa))+
   geom_histogram(binwidth = 0.05)
 
 
-###Supplementary table 2
+#Supplementary table 2
 #Create data frame for mean article profile
 mean_article_profile <-df_coverage_2 %>%
   mutate(total_coded = rowSums(.[,2:30])) %>% #create a new column for the total amount of text coded in each article
@@ -449,11 +453,12 @@ df_supp_table_2 <- inner_join(df_CA_results_nodes, df_mean_article_profile, by =
   arrange(desc(Percent_mean_article))
 
 
-###Supplementary figure 1
+#Supplementary figure 1
 fviz_screeplot(CA_result)+
   geom_hline(yintercept=(1/(29-1)*100),linetype=2, color="red")
 
 
-###Supplementary figure 2
+#Supplementary figure 2
 plot(HCPC_result, choice="bar")
+
   
