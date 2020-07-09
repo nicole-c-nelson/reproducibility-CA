@@ -298,13 +298,13 @@ ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_2)) +
   scale_color_viridis(discrete = TRUE, option = "D")+
   geom_point(data = df_CA_results_nodes, aes(Dim_1, Dim_2, size=Contrib_1_2), shape = 1)+
   geom_text_repel(data = subset(df_CA_results_nodes, Contrib_1_2 > 4), 
-                  aes(label = Name), point.padding = 0.25, box.padding = 0.75)+
+                  aes(label = Node), point.padding = 0.25, box.padding = 0.75)+
   geom_point(data=df_CA_results_sup_var, shape=3, color="red",
              aes(x=Dim_1, y=Dim_2))+
   geom_text_repel(data=df_CA_results_sup_var, color="red",
                   aes(label = Name), point.padding = 0.25, box.padding = 0.5)+
   labs(size="Contribution",color="Terms",
-       x="Dim 1: 'Discipline' (8.50%)", y="Dim 2: 'Audience' (7.73%)")+
+       x="Dimension 1: 'Discipline' (8.50%)", y="Dimension 2: 'Audience' (7.73%)")+
   theme(legend.position = "bottom")
 
 #Plot Fig 2b using ggplot
@@ -316,9 +316,9 @@ ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_3))+
   scale_color_viridis(discrete = TRUE, option = "D", direction = -1)+
   geom_point(data = df_CA_results_nodes, aes(Dim_1, Dim_3, size=Contrib_1_3), shape = 1)+
   geom_text_repel(data = subset(df_CA_results_nodes, Contrib_1_3 > 1.9), 
-                  aes(label = Name), point.padding = 0.25, box.padding = 0.5)+
+                  aes(label = Node), point.padding = 0.25, box.padding = 0.5)+
   labs(size="Contribution", color="Cluster",
-       x="Dim 1: 'Discipine' (8.50%)", y="Dim 3: 'Pereceptions of variation' (6.95%)")+
+       x="Dimension 1: 'Discipline' (8.50%)", y="Dimension 3: 'Perceptions of variation' (6.95%)")+
   theme(legend.position = "bottom")
 
 
