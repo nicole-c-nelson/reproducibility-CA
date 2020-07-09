@@ -21,6 +21,8 @@ df_IRR <- IRR_files %>%
   filter(!grepl(":", Name)) %>% #remove IRR scores for individual articles, leaving only node summary scores
   pivot_wider(names_from = "rater", values_from = "Kappa") %>% #switch to wide data format
   mutate(Name = str_extract(Name, "[^\\\\.]+$")) %>% #fix name of nodes
+  mutate(Name = case_when(Name == "Bayesian stats" ~ "Bayesian statistics",
+                          TRUE ~ Name)) %>% #spell out Bayesian stats
   na.omit(.) %>% #get rid of rows with NA values
   mutate(Ave_Kappa = rowMeans(.[,-1])) %>% #calculate average Kappa, excluding Name column
   arrange(Ave_Kappa) #sort by average Kappa
@@ -114,7 +116,8 @@ df_coverage <- summary_files %>%
   select(node, Name, Coverage) %>% #select 3 relevant variables
   mutate(node = str_sub(node, start = 36, end = -6)) %>% #fix name of nodes
   mutate(Name = str_replace_all(Name, "[^a-zA-Z0-9]", "")) %>% #remove special characters, which cause errors in some people's systems
-  pivot_wider(names_from = "node", values_from = "Coverage", values_fill = list(Coverage = 0)) #switch to wide data format; fill empty cells with 0
+  pivot_wider(names_from = "node", values_from = "Coverage", values_fill = list(Coverage = 0)) %>% #switch to wide data format; fill empty cells with 0
+  rename(`Bayesian statistics` = `Bayesian stats`) #spell out Bayesian stats
 
 #Create a data frame of nodes reaching the IRR threshold
 df_IRR_2 <- df_IRR %>%
@@ -294,9 +297,9 @@ ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_2)) +
   theme_bw()+
   geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
   geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
-  geom_point(aes(color = term)) +
   scale_color_viridis(discrete = TRUE, option = "D")+
-  geom_point(data = df_CA_results_nodes, aes(Dim_1, Dim_2, size=Contrib_1_2), shape = 1)+
+  geom_point(data = df_CA_results_nodes, aes(Dim_1, Dim_2, size=Contrib_1_2), shape = 22, fill = "lightgrey")+
+  geom_point(aes(color = term)) +
   geom_text_repel(data = subset(df_CA_results_nodes, Contrib_1_2 > 4), 
                   aes(label = Node), point.padding = 0.25, box.padding = 0.75)+
   geom_point(data=df_CA_results_sup_var, shape=3, color="red",
@@ -304,7 +307,7 @@ ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_2)) +
   geom_text_repel(data=df_CA_results_sup_var, color="red",
                   aes(label = Name), point.padding = 0.25, box.padding = 0.5)+
   labs(size="Contribution",color="Terms",
-       x="Dimension 1: 'Discipline' (8.50%)", y="Dimension 2: 'Audience' (7.73%)")+
+       x="Dimension 1: ‘Discipline’ (8.50%)", y="Dimension 2: ‘Audience’ (7.73%)")+
   theme(legend.position = "bottom")
 
 #Plot Fig 2b using ggplot
@@ -312,13 +315,13 @@ ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_3))+
   theme_bw()+
   geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
   geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
+  geom_point(data = df_CA_results_nodes, aes(Dim_1, Dim_3, size=Contrib_1_3), shape = 22, fill = "lightgrey")+
   geom_point(aes(color = clust))+
   scale_color_viridis(discrete = TRUE, option = "D", direction = -1)+
-  geom_point(data = df_CA_results_nodes, aes(Dim_1, Dim_3, size=Contrib_1_3), shape = 1)+
   geom_text_repel(data = subset(df_CA_results_nodes, Contrib_1_3 > 1.9), 
                   aes(label = Node), point.padding = 0.25, box.padding = 0.5)+
   labs(size="Contribution", color="Cluster",
-       x="Dimension 1: 'Discipline' (8.50%)", y="Dimension 3: 'Perceptions of variation' (6.95%)")+
+       x="Dimension 1: ‘Discipline’ (8.50%)", y="Dimension 3: ‘Perceptions of variation’ (6.95%)")+
   theme(legend.position = "bottom")
 
 
