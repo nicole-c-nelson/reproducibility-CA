@@ -201,10 +201,9 @@ df_article_attrib_2 <- df_coverage_3 %>%
 ggplot(df_article_attrib, aes(x=Audience, y=Percentage, fill=author))+
   geom_col()+
   scale_fill_viridis(discrete = TRUE)+
-  #coord_flip()+
-  #theme_bw()+
-  coord_polar("y")+
-  theme_void()+
+  theme_bw()+
+  #coord_polar("y")+
+  #theme_void()+
   theme(legend.position = "bottom")
 
 #Plot Fig 1b using ggplot
@@ -430,7 +429,7 @@ df_supp_table_1 <- df_IRR %>%
   mutate_if(is.numeric, round, 2) %>%
   filter(!grepl("Overall", Name)) 
   
-#Plot the histogram of this table so you can see the distribution of average Kappa scores  
+#Bonus visualization: plot the histogram of this table so you can see the distribution of average Kappa scores  
 ggplot(df_supp_table_1, aes(x=Ave_Kappa))+
   geom_histogram(binwidth = 0.05)
 
@@ -447,6 +446,7 @@ df_mean_article_profile <- as.data.frame(mean_article_profile) %>% #read those c
   rownames_to_column(var = "Node") %>% #move the rownames into a new column
   rename("Percent_mean_article" = mean_article_profile) #rename the means column
 
+#Join mean article profile data info to coordinates, contribution, and Cos2 info from the CA
 df_supp_table_2 <- inner_join(df_CA_results_nodes, df_mean_article_profile, by = "Node") %>%
   select(Node, Percent_mean_article, Dim_1, Dim_2, Contrib_1_2, Cos2_1_2) %>%
   mutate_if(is.numeric, round, 2) %>%
