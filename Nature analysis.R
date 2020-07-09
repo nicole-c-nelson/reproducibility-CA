@@ -5,6 +5,8 @@ library(FactoMineR)
 library(ggplot2)
 library(viridis)
 library(ggrepel)
+library(factoextra)
+
 
 ###Read IRR and node summary files
 IRR_files <- dir_ls("Data/IRR files") #create list of all files in the IRR data folder
@@ -53,6 +55,7 @@ colnames(df_metadata) <- n3
 
 #create column for publication year
 df_metadata_2 <- df_metadata %>%
+  mutate(Name = str_replace_all(Name, "[^a-zA-Z0-9]", "")) %>% #remove special characters, which cause problems in some people's systems
   pivot_longer(cols = matches("[[:digit:]]{4}")) %>% #pivot all column with 4 digits in them
   mutate(value = replace(name, value == 0, NA)) %>% #replace cells that have 0 with NA
   drop_na(value) %>% #drop NAs in value
@@ -109,6 +112,7 @@ df_coverage <- summary_files %>%
   map_dfr(read_xlsx, .id = "node") %>% #read in every file; add "node" variable based on file name
   select(node, Name, Coverage) %>% #select 3 relevant variables
   mutate(node = str_sub(node, start = 36, end = -6)) %>% #fix name of nodes
+  mutate(Name = str_replace_all(Name, "[^a-zA-Z0-9]", "")) %>% #remove special characters, which cause errors in some people's systems
   pivot_wider(names_from = "node", values_from = "Coverage", values_fill = list(Coverage = 0)) #switch to wide data format; fill empty cells with 0
 
 #Create a data frame of nodes reaching the IRR threshold
@@ -175,10 +179,37 @@ MFA_auth_result <-MFA(df_coverage_sorted_by_auth_2,
                                num.group.sup=c(2),graph=FALSE)
 
 ##Figure 1
-#Create data frame of article attributes
-df_article_attrib <- group_by(df_coverage_3, audience, author, year) %>%
-  tally()
+#Create data frames of article attributes
+df_article_attrib <- df_coverage_3 %>%
+  mutate(Audience = str_remove(audience, "\\..*")) %>%
+  group_by(Audience, author) %>%
+  tally() %>%
+  pivot_wider(names_from = Audience, values_from =n) %>%
+  mutate(Popular = Popular/sum(Popular)*100) %>%
+  mutate(Scientific = Scientific/sum(Scientific)*100) %>%
+  pivot_longer(-author, names_to = "Audience", values_to = "Percentage")
 
+df_article_attrib_2 <- df_coverage_3 %>%
+  mutate(Audience = str_remove(audience, "\\..*")) %>%
+  group_by(Audience, author, year) %>%
+  tally() 
+
+#Plot Fig 1a using ggplot
+ggplot(df_article_attrib, aes(x=Audience, y=Percentage, fill=author))+
+  geom_col()+
+  scale_fill_viridis(discrete = TRUE)+
+  #coord_flip()+
+  #theme_bw()+
+  coord_polar("y")+
+  theme_void()+
+  theme(legend.position = "bottom")
+
+#Plot Fig 1b using ggplot
+ggplot(df_article_attrib_2, aes(fill=Audience, x=year, y=n))+
+  geom_bar(position="stack", stat="identity")+
+  scale_fill_viridis(discrete = T, direction = -1)+
+  theme_bw()+
+  theme(legend.position = "bottom")
 
 ###Figure 2
 ##Extract data from the CA and clustering objects to use for ggplot
@@ -222,7 +253,7 @@ df_CA_results_nodes <- data.frame("Dim_1" = node_coord_1,
                          "Cos2_2" = node_cos2_2,
                          "Cos2_3" = node_cos2_3) %>%
   `rownames<-`(node_labels) %>%
-  rownames_to_column(var = "Name") %>%
+  rownames_to_column(var = "Node") %>%
   mutate("Contrib_1_2" = Contrib_1 + Contrib_2) %>%
   mutate("Contrib_1_3" = Contrib_1 + Contrib_3) %>%
   mutate("Cos2_1_2" = Cos2_1 + Cos2_2) %>%
@@ -289,7 +320,7 @@ ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_3))+
 
 ###Figure 3
 ##Extract data from the MFA objects to use for ggplot
-#Create data frames for MFA by author
+#Create data frames for MFA by author results
 df_MFA_auth_articles <- as.data.frame(MFA_auth_result$freq$coord) %>%
   rownames_to_column(var = "Name")
 
@@ -321,7 +352,7 @@ df_MFA_auth_nodes_3 <- inner_join(df_MFA_auth_nodes_2, df_MFA_auth_part_points, 
                values_to = "Value") %>%
   pivot_wider(names_from = Dim, values_from = Value)
 
-#Create data frames for MFA by audience
+#Create data frames for MFA by audience results
 df_MFA_aud_articles <- as.data.frame(MFA_aud_result$freq$coord) %>%
   rownames_to_column(var = "Name")
 
@@ -388,4 +419,41 @@ ggplot(df_MFA_aud_nodes_3, aes(Dim.1, Dim.2))+
   geom_text_repel(data = subset(df_MFA_aud_nodes_3, Point_type=="Mean" & Within_inert_1_2 > 9),
                   aes(label=Node), point.padding = 0.25, box.padding = 0.5)+
   theme(legend.position = "bottom")
+
+
+###Supplementary table 1
+df_supp_table_1 <- df_IRR %>%
+  mutate_if(is.numeric, round, 2) %>%
+  filter(!grepl("Overall", Name)) 
+  
+#Plot the histogram of this table so you can see the distribution of average Kappa scores  
+ggplot(df_supp_table_1, aes(x=Ave_Kappa))+
+  geom_histogram(binwidth = 0.05)
+
+
+###Supplementary table 2
+#Create data frame for mean article profile
+mean_article_profile <-df_coverage_2 %>%
+  mutate(total_coded = rowSums(.[,2:30])) %>% #create a new column for the total amount of text coded in each article
+  mutate_at(c(2:30), funs((./total_coded)*100)) %>% #use this new column to calculate the amount of text coded for each theme as a percentage of the total text coded
+  select(-c(1,31)) %>% #remove the article name and total amount of text coded columns
+  colMeans() #compute the mean of each column
+
+df_mean_article_profile <- as.data.frame(mean_article_profile) %>% #read those column means as a data frame
+  rownames_to_column(var = "Node") %>% #move the rownames into a new column
+  rename("Percent_mean_article" = mean_article_profile) #rename the means column
+
+df_supp_table_2 <- inner_join(df_CA_results_nodes, df_mean_article_profile, by = "Node") %>%
+  select(Node, Percent_mean_article, Dim_1, Dim_2, Contrib_1_2, Cos2_1_2) %>%
+  mutate_if(is.numeric, round, 2) %>%
+  arrange(desc(Percent_mean_article))
+
+
+###Supplementary figure 1
+fviz_screeplot(CA_result)+
+  geom_hline(yintercept=(1/(29-1)*100),linetype=2, color="red")
+
+
+###Supplementary figure 2
+plot(HCPC_result, choice="bar")
   

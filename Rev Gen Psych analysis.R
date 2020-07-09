@@ -22,7 +22,6 @@ df_IRR <- IRR_files %>%
   mutate(Name = str_extract(Name, "[^\\\\.]+$")) %>% #fix name of nodes
   na.omit(.) %>% #get rid of rows with NA values
   mutate(Ave_Kappa = rowMeans(.[,-1])) %>% #calculate average Kappa, excluding Name column
-  mutate_if(is.numeric, round, 2) %>% #round to two decimal places
   arrange(Ave_Kappa) #sort by average Kappa
 
 
