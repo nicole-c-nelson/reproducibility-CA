@@ -312,15 +312,6 @@ ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_2)) +
   theme_bw()+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
   geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
-<<<<<<< HEAD
-  geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
-  scale_color_viridis(discrete = TRUE, option = "D")+
-  geom_point(data = df_CA_results_nodes, aes(Dim_1, Dim_2, size=Contrib_1_2), shape = 22, fill = "lightgrey")+
-  geom_point(aes(color = term))+
-  geom_text_repel(data = subset(df_CA_results_nodes, Contrib_1_2 > 4), 
-                  aes(label = Node), point.padding = 0.25, box.padding = 0.75)+
-  geom_point(data=df_CA_results_sup_var, shape=3, size = 2, color="red",
-=======
   geom_vline(xintercept = 0, linetype=2, color="darkgrey") +
   scale_color_viridis(discrete = TRUE, option = "D") +
   geom_point(aes(color = term)) +
@@ -329,7 +320,6 @@ ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_2)) +
              color="white", 
              fill = "red",
              size = 3,
->>>>>>> 85fd8b6b8931c738cd5920bb5287d7bade45d107
              aes(x=Dim_1, y=Dim_2))+
   geom_point(data = df_CA_results_nodes, 
              aes(Dim_1, Dim_2, size=Contrib_1_2), 
