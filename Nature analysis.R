@@ -195,9 +195,9 @@ MFA_aud_result <-MFA(df_coverage_sorted_by_aud_2,
                               num.group.sup=c(),graph=FALSE)
 
 MFA_auth_result <-MFA(df_coverage_sorted_by_auth_2,
-                               group=c(120,25,208),type=c('f','f','f'),
-                               name.group=c('Journalist', 'Other', 'Scientist'),
-                               num.group.sup=c(2),graph=FALSE)
+                      group=c(120,25,208),type=c('f','f','f'),
+                      name.group=c('Journalist', 'Other', 'Scientist'),
+                      num.group.sup=c(2),graph=FALSE)
 
 
 # Figure 1 ----------------------------------------------------------------
@@ -315,10 +315,10 @@ ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_2)) +
   geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
   scale_color_viridis(discrete = TRUE, option = "D")+
   geom_point(data = df_CA_results_nodes, aes(Dim_1, Dim_2, size=Contrib_1_2), shape = 22, fill = "lightgrey")+
-  geom_point(aes(color = term)) +
+  geom_point(aes(color = term))+
   geom_text_repel(data = subset(df_CA_results_nodes, Contrib_1_2 > 4), 
                   aes(label = Node), point.padding = 0.25, box.padding = 0.75)+
-  geom_point(data=df_CA_results_sup_var, shape=3, color="red",
+  geom_point(data=df_CA_results_sup_var, shape=3, size = 2, color="red",
              aes(x=Dim_1, y=Dim_2))+
   geom_text_repel(data=df_CA_results_sup_var, color="red",
                   aes(label = Name), point.padding = 0.25, box.padding = 0.5)+
@@ -407,6 +407,7 @@ df_MFA_aud_nodes_3 <- inner_join(df_MFA_aud_nodes_2, df_MFA_aud_part_points, by 
                values_to = "Value") %>%
   pivot_wider(names_from = Dim, values_from = Value)
 
+
 #Plot Fig 3a using ggplot
 ggplot(df_MFA_auth_nodes_3, aes(Dim.1, Dim.2))+
   theme_bw()+
@@ -415,15 +416,17 @@ ggplot(df_MFA_auth_nodes_3, aes(Dim.1, Dim.2))+
   geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
   geom_point(data=df_MFA_auth_articles, aes(Dim.1, Dim.2), alpha=0.20)+
   geom_point(data=subset(df_MFA_auth_nodes_3, Point_type=="Mean"),
-    aes(size=Within_inert_1_2),shape = 1)+
+    aes(size=Within_inert_1_2), shape = 22, fill = "lightgrey")+
   geom_point(data=subset(df_MFA_auth_nodes_3, Within_inert_1_2 > 4 & Point_type=="Scientist"
                          | Within_inert_1_2 > 4 & Point_type=="Journalist"),
-             aes(color=Point_type), size=3)+
+             aes(color=Point_type), size=3, shape=15)+
   scale_color_viridis(discrete = TRUE, option = "D")+
   geom_line(data = subset(df_MFA_auth_nodes_3, Within_inert_1_2 > 4),
             aes(group=Node), linetype=2)+
   geom_text_repel(data = subset(df_MFA_auth_nodes_3, Point_type=="Mean" & Within_inert_1_2 > 4),
                   aes(label=Node), point.padding = 0.25, box.padding = 0.5)+
+  labs(size="Within-theme inertia", color="Group",
+       x="Dimension 1 (8.72%)", y="Dimension 2 (7.79%)")+
   theme(legend.position = "bottom")
   
 #Plot Fig 3b using ggplot
@@ -434,15 +437,17 @@ ggplot(df_MFA_aud_nodes_3, aes(Dim.1, Dim.2))+
   geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
   geom_point(data=df_MFA_aud_articles, aes(Dim.1, Dim.2), alpha=0.20)+
   geom_point(data=subset(df_MFA_aud_nodes_3, Point_type=="Mean"),
-             aes(size=Within_inert_1_2),shape = 1)+
+             aes(size=Within_inert_1_2),shape = 22, fill = "lightgrey")+
   geom_point(data=subset(df_MFA_aud_nodes_3, Within_inert_1_2 > 9 & Point_type=="Scientific"
                          | Within_inert_1_2 > 9 & Point_type=="Popular"),
-             aes(color=Point_type), size=3)+
+             aes(color=Point_type), size=3, shape=15)+
   scale_color_viridis(discrete = TRUE, option = "D")+
   geom_line(data = subset(df_MFA_aud_nodes_3, Within_inert_1_2 > 9),
             aes(group=Node), linetype=2)+
   geom_text_repel(data = subset(df_MFA_aud_nodes_3, Point_type=="Mean" & Within_inert_1_2 > 9),
                   aes(label=Node), point.padding = 0.25, box.padding = 0.5)+
+  labs(size="Within-theme inertia", color="Group",
+       x="Dimension 1 (8.11%)", y="Dimension 2 (6.53%)")+
   theme(legend.position = "bottom")
 
 
