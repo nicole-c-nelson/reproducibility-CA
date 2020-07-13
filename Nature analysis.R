@@ -26,7 +26,7 @@ df_IRR <- IRR_files %>%
                           Name == "Stakes differ by fields" ~ "Field differences",
                           Name == "Training in research methods" ~ "Methods training",
                           Name == "Transparency of data or methodology" ~ "Transparency",
-                          Name == "P-values" ~ "p-values",
+                          Name == "P-values" ~ "P values",#Nature style
                           Name == "Governmental or NGO actions" ~ "Government/NGO actions",
                           Name == "Brian Nosek and COS" ~ "Brian Nosek/Center for Open Science",
                           Name == "Journals and publishing culture" ~ "Publishing culture",
@@ -130,7 +130,7 @@ df_coverage <- summary_files %>%
          `Field differences` = `Stakes differ by fields`,
          `Methods training` = `Training in research methods`,
          `Transparency` = `Transparency of data or methodology`,
-         `p-values` = `P-values`,
+         `P values` = `P-values`,
          `Government/NGO actions` = `Governmental or NGO actions`,
          `Brian Nosek/Center for Open Science` = `Brian Nosek and COS`,
          `Publishing culture` = `Journals and publishing culture`) 
@@ -312,6 +312,7 @@ ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_2)) +
   theme_bw()+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
   geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
+<<<<<<< HEAD
   geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
   scale_color_viridis(discrete = TRUE, option = "D")+
   geom_point(data = df_CA_results_nodes, aes(Dim_1, Dim_2, size=Contrib_1_2), shape = 22, fill = "lightgrey")+
@@ -319,12 +320,32 @@ ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_2)) +
   geom_text_repel(data = subset(df_CA_results_nodes, Contrib_1_2 > 4), 
                   aes(label = Node), point.padding = 0.25, box.padding = 0.75)+
   geom_point(data=df_CA_results_sup_var, shape=3, size = 2, color="red",
+=======
+  geom_vline(xintercept = 0, linetype=2, color="darkgrey") +
+  scale_color_viridis(discrete = TRUE, option = "D") +
+  geom_point(aes(color = term)) +
+  geom_point(data=df_CA_results_sup_var, 
+             shape = 25, 
+             color="white", 
+             fill = "red",
+             size = 3,
+>>>>>>> 85fd8b6b8931c738cd5920bb5287d7bade45d107
              aes(x=Dim_1, y=Dim_2))+
+  geom_point(data = df_CA_results_nodes, 
+             aes(Dim_1, Dim_2, size=Contrib_1_2), 
+             shape = 22, 
+             fill = "lightgrey") +
   geom_text_repel(data=df_CA_results_sup_var, color="red",
                   aes(label = Name), point.padding = 0.25, box.padding = 0.5)+
+  geom_text_repel(data = subset(df_CA_results_nodes, Contrib_1_2 > 4), 
+                  aes(label = Node), point.padding = 0.25, box.padding = 0.75)+
   labs(size="Contribution",color="Terms",
        x="Dimension 1: ‘Discipline’ (8.50%)", y="Dimension 2: ‘Audience’ (7.73%)")+
   theme(legend.position = "bottom")
+# file saved as SVG with 650x650 pixels
+# manual edits in Inkscape:
+# - moved labels to avoid overlap (keeping labels in the same quadrant as the corresponding data point)
+# - removed period in "Scientific.audience" and "Popular.Audience" labels
 
 #Plot Fig 2b using ggplot
 ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_3))+
@@ -332,15 +353,20 @@ ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_3))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
   geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
   geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
-  geom_point(data = df_CA_results_nodes, aes(Dim_1, Dim_3, size=Contrib_1_3), shape = 22, fill = "lightgrey")+
   geom_point(aes(color = clust))+
   scale_color_viridis(discrete = TRUE, option = "D", direction = -1)+
+  geom_point(data = df_CA_results_nodes, aes(Dim_1, Dim_3, size=Contrib_1_3), 
+             shape = 22, 
+             fill = "lightgrey",
+             alpha = 0.8)+
   geom_text_repel(data = subset(df_CA_results_nodes, Contrib_1_3 > 1.9), 
                   aes(label = Node), point.padding = 0.25, box.padding = 0.5)+
   labs(size="Contribution", color="Cluster",
        x="Dimension 1: ‘Discipline’ (8.50%)", y="Dimension 3: ‘Perceptions of variation’ (6.95%)")+
   theme(legend.position = "bottom")
-
+# file saved as SVG with 650x650 pixels
+# manual edits in Inkscape:
+# - moved labels to avoid overlap (keeping labels in the same quadrant as the corresponding data point)
 
 # Figure 3 ----------------------------------------------------------------
 #Create data frames for MFA by author results
