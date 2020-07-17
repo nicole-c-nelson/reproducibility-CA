@@ -6,7 +6,8 @@ library(ggplot2)
 library(viridis)
 library(ggrepel)
 library(factoextra)
-
+library(knitr)
+library(waffle)
 
 ###Read IRR and node summary files
 IRR_files <- dir_ls("Data/IRR files") #create list of all files in the IRR data folder
@@ -217,20 +218,43 @@ df_article_attrib_2 <- df_coverage_3 %>%
   tally() 
 
 #Plot Fig 1a using ggplot
-ggplot(df_article_attrib, aes(x=Audience, y=Percentage, fill=author))+
-  geom_col()+
-  scale_fill_viridis(discrete = TRUE)+
-  theme_bw()+
-  #coord_polar("y")+
-  #theme_void()+
-  theme(legend.position = "bottom")
+
+
+cols <- viridis(3)
+
+
+df_article_attrib_2 %>% 
+  mutate(author = as.factor(author)) %>% 
+  mutate(author = fct_relevel(author, "Journalist", "Scientist")) %>% 
+  arrange(author) %>% 
+  ggplot(aes(fill=author, values = n))+
+  geom_waffle(n_rows = 10, flip = T, color = "white")+
+  facet_wrap(~ Audience) +
+  coord_equal() +
+  scale_fill_manual(values = c(cols[1], cols[3], cols[2]),
+                    breaks = c("Journalist", "Scientist", "Other")) +
+  theme_void()+
+  theme_enhance_waffle() +
+  theme_void()+
+  theme(legend.position = "bottom") +
+  labs(fill = "Author")
+
+
+
 
 #Plot Fig 1b using ggplot
-ggplot(df_article_attrib_2, aes(fill=Audience, x=year, y=n))+
+df_article_attrib_2 %>% 
+  mutate(year = case_when(year < 2009 ~ "1996-2008",
+                          T ~ year)) %>% 
+ggplot(aes(fill=Audience, x=year, y=n))+
   geom_bar(position="stack", stat="identity")+
-  scale_fill_viridis(discrete = T, direction = -1)+
-  theme_bw()+
-  theme(legend.position = "bottom")
+  scale_fill_viridis(discrete = T)+
+  theme_minimal()+
+  theme(legend.position = "bottom") +
+  labs(x = element_blank(), y = "Number of articles") +
+  theme(axis.text.x = element_text(angle = 45, 
+                                   vjust=1.2,hjust=1),
+        panel.grid.major.x = element_blank())
 
 
 # Figure 2 ----------------------------------------------------------------
@@ -432,7 +456,10 @@ ggplot(df_MFA_auth_nodes_3, aes(Dim.1, Dim.2))+
   geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
   geom_point(data=df_MFA_auth_articles, aes(Dim.1, Dim.2), alpha=0.20)+
   geom_point(data=subset(df_MFA_auth_nodes_3, Point_type=="Mean"),
-    aes(size=Within_inert_1_2), shape = 22, fill = "lightgrey")+
+    aes(size=Within_inert_1_2), 
+    shape = 22, 
+    fill = "lightgrey",
+    alpha = 0.8)+
   geom_point(data=subset(df_MFA_auth_nodes_3, Within_inert_1_2 > 4 & Point_type=="Scientist"
                          | Within_inert_1_2 > 4 & Point_type=="Journalist"),
              aes(color=Point_type), size=3, shape=15)+
@@ -453,7 +480,10 @@ ggplot(df_MFA_aud_nodes_3, aes(Dim.1, Dim.2))+
   geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
   geom_point(data=df_MFA_aud_articles, aes(Dim.1, Dim.2), alpha=0.20)+
   geom_point(data=subset(df_MFA_aud_nodes_3, Point_type=="Mean"),
-             aes(size=Within_inert_1_2),shape = 22, fill = "lightgrey")+
+             aes(size=Within_inert_1_2),
+             shape = 22, 
+             fill = "lightgrey",
+             alpha = 0.8)+
   geom_point(data=subset(df_MFA_aud_nodes_3, Within_inert_1_2 > 9 & Point_type=="Scientific"
                          | Within_inert_1_2 > 9 & Point_type=="Popular"),
              aes(color=Point_type), size=3, shape=15)+
@@ -470,8 +500,13 @@ ggplot(df_MFA_aud_nodes_3, aes(Dim.1, Dim.2))+
 # Supplementary figures and tables ----------------------------------------
 #Supplementary table 1
 df_supp_table_1 <- df_IRR %>%
-  mutate_if(is.numeric, round, 2) %>%
-  filter(!grepl("Overall", Name)) 
+  filter(!grepl("Overall", Name)) %>% 
+  arrange(desc(Ave_Kappa)) %>% 
+  kable(format = "latex", 
+        col.names = c("Name", "JC_NCN", "KI_JC", "KI_NCN", "Average kappa"),
+        booktabs = T, 
+        longtable = T,
+        digits = 2)
   
 #Bonus visualization: plot the histogram of this table so you can see the distribution of average Kappa scores  
 ggplot(df_supp_table_1, aes(x=Ave_Kappa))+
@@ -485,7 +520,21 @@ mean_article_profile <-df_coverage_2 %>%
   mutate_at(c(2:30), funs((./total_coded)*100)) %>% #use this new column to calculate the amount of text coded for each theme as a percentage of the total text coded
   select(-c(1,31)) %>% #remove the article name and total amount of text coded columns
   colMeans() #compute the mean of each column
-
+  
+df_coverage_2 %>% 
+  rowwise() %>% 
+  mutate(total = sum(c_across(where(is.numeric)))) %>% 
+  ungroup() %>% 
+  mutate(across(where(is.numeric), ~./total)) %>% 
+  pivot_longer(-Name, names_to = "code", values_to = "coverage") %>% 
+  group_by(code) %>% 
+  summarize(Percent_mean_article = mean(coverage)*100) %>% 
+  inner_join(df_CA_results_nodes, by = c("code" = "Node")) %>%
+  select(code, Percent_mean_article, Dim_1, Dim_2, Contrib_1_2, Cos2_1_2) %>% 
+  arrange(desc(Percent_mean_article))
+    arrange(desc(Percent_mean_article))
+    
+  
 df_mean_article_profile <- as.data.frame(mean_article_profile) %>% #read those column means as a data frame
   rownames_to_column(var = "Node") %>% #move the rownames into a new column
   rename("Percent_mean_article" = mean_article_profile) #rename the means column
