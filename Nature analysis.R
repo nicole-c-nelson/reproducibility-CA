@@ -186,6 +186,14 @@ CA_result <- CA(df_coverage_5, #perform CA
                          ncp=18, #retain first 18 dimensions (for later clustering)
                          graph = FALSE) 
 
+#Create a description of the first three dimensions of the CA
+dimdesc_1_3 <- dimdesc(CA_result, axes = 1:3, proba = 0.01)
+
+#View tables of correlations of supplementary variables with Dim 1 and Dim 2
+view(dimdesc_1_3$`Dim 1`$quanti) 
+view(dimdesc_1_3$`Dim 1`$quali)
+view(dimdesc_1_3$`Dim 2`$quali)
+
 #Clustering 
 HCPC_result <- HCPC(CA_result, nb.clust=4, consol=TRUE, graph=FALSE) #perform clustering
 

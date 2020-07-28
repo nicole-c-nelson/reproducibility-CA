@@ -8,6 +8,7 @@ library(viridis)
 library(ggridges)
 library(ggrepel)
 library(factoextra)
+library(psychometric)
 
 
 
@@ -177,6 +178,17 @@ dimdesc_1_3 <- dimdesc(coverage_CA_result, axes = 1:3, proba = 0.01) #create dim
 view(dimdesc_1_3$"Dim 2"$quali) #output dimension descriptions
 view(dimdesc_1_3$"Dim 1"$category)
 view(dimdesc_1_3$`Dim 1`$quanti)
+
+#Calculate confidence intervals for correlations
+#NIH
+CIr(0.30, 353, level = 0.95)
+#Psychology
+CIr(-0.29, 353, level = 0.95)
+#Term
+CI.Rsq(0.14, 353, 3, level = 0.95)
+#Audience
+CI.Rsq(0.12, 353, 2, level = 0.95)
+
 
 #Clustering
 coverage_HCPC_result <- HCPC(coverage_CA_result, nb.clust=4, consol=TRUE, graph=FALSE) #perform clustering
