@@ -507,24 +507,6 @@ ggplot(df_MFA_aud_nodes_3, aes(Dim.1, Dim.2))+
 
 # Supplementary figures and tables ----------------------------------------
 #Supplementary table 1
-df_IRR %>%
-  filter(!grepl("Overall", Name)) %>% 
-  arrange(desc(Ave_Kappa)) %>% 
-  kable(format = "latex", 
-        col.names = c("Theme", "JC--NCN", "KI--JC", "KI--NCN", "Average Kappa"),
-        booktabs = T, 
-        longtable = T,
-        digits = 2)
-  
-#Bonus visualization: plot the histogram of this table so you can see the distribution of average Kappa scores  
-#not included in paper
-df_IRR %>%
-  filter(!grepl("Overall", Name)) %>%
-  ggplot(aes(x=Ave_Kappa))+
-    geom_histogram(binwidth = 0.05)
-
-
-#Supplementary table 2
 df_coverage_2 %>% 
   rowwise() %>% 
   mutate(total = sum(c_across(where(is.numeric)))) %>% #new variable for the total amount of text coded in each article
@@ -542,15 +524,36 @@ df_coverage_2 %>%
         longtable = T,
         digits = 2) #output as LaTeX table code
 
+#Supplementary table 2
+df_IRR %>%
+  filter(!grepl("Overall", Name)) %>% 
+  arrange(desc(Ave_Kappa)) %>% 
+  kable(format = "latex", 
+        col.names = c("Theme", "JC--NCN", "KI--JC", "KI--NCN", "Average Kappa"),
+        booktabs = T, 
+        longtable = T,
+        digits = 2)
+  
+#Bonus visualization: plot the histogram of this table so you can see the distribution of average Kappa scores  
+#not included in paper
+df_IRR %>%
+  filter(!grepl("Overall", Name)) %>%
+  ggplot(aes(x=Ave_Kappa))+
+    geom_histogram(binwidth = 0.05)
 
 
-#Supplementary figure 1
+
+
+
+#Bonus figure 
+#not included in paper
 fviz_screeplot(CA_result)+
   geom_hline(yintercept=(1/(29-1)*100),linetype=2, color="red") +
   theme_minimal()
 
 
-#Supplementary figure 2
+#Bonus figure 
+#not included in paper
 plot(HCPC_result, choice="bar")
 
   
