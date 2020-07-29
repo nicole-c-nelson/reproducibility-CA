@@ -186,8 +186,10 @@ CIr(0.30, 353, level = 0.95)
 CIr(-0.29, 353, level = 0.95)
 #Term
 CI.Rsq(0.14, 353, 3, level = 0.95)
+CIr(0.38, 353)
 #Audience
 CI.Rsq(0.12, 353, 2, level = 0.95)
+CIr(0.34, 353)
 
 
 #Clustering

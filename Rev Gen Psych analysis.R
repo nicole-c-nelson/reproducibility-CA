@@ -20,6 +20,16 @@ df_IRR <- IRR_files %>%
   filter(!grepl(":", Name)) %>% #remove IRR scores for individual articles, leaving only node summary scores
   pivot_wider(names_from = "rater", values_from = "Kappa") %>% #switch to wide data format
   mutate(Name = str_extract(Name, "[^\\\\.]+$")) %>% #fix name of nodes
+  mutate(Name = case_when(Name == "Bayesian stats" ~ "Bayesian statistics", #clean up node names
+                          Name == "Heterogeneity complexity" ~ "Heterogeneity",
+                          Name == "Stakes differ by fields" ~ "Field differences",
+                          Name == "Training in research methods" ~ "Methods training",
+                          Name == "Transparency of data or methodology" ~ "Transparency",
+                          Name == "P-values" ~ "P values",#Nature style
+                          Name == "Governmental or NGO actions" ~ "Government/NGO actions",
+                          Name == "Brian Nosek and COS" ~ "Brian Nosek/Center for Open Science",
+                          Name == "Journals and publishing culture" ~ "Publishing culture",
+                          TRUE ~ Name)) %>% 
   na.omit(.) %>% #get rid of rows with NA values
   mutate(Ave_Kappa = rowMeans(.[,-1])) %>% #calculate average Kappa, excluding Name column
   arrange(Ave_Kappa) #sort by average Kappa
@@ -32,7 +42,16 @@ df_coverage <- summary_files %>%
   map_dfr(read_xlsx, .id = "node") %>% #read in every file; add "node" variable based on file name
   select(node, Name, Coverage) %>% #select 3 relevant variables
   mutate(node = str_sub(node, start = 36, end = -6)) %>% #fix name of nodes
-  pivot_wider(names_from = "node", values_from = "Coverage", values_fill = list(Coverage = 0)) #switch to wide data format; fill empty cells with 0
+  pivot_wider(names_from = "node", values_from = "Coverage", values_fill = list(Coverage = 0)) %>% #switch to wide data format; fill empty cells with 0
+  rename(`Bayesian statistics` = `Bayesian stats`, #fix node names
+         `Heterogeneity` = `Heterogeneity complexity`,
+         `Field differences` = `Stakes differ by fields`,
+         `Methods training` = `Training in research methods`,
+         `Transparency` = `Transparency of data or methodology`,
+         `P values` = `P-values`,
+         `Government/NGO actions` = `Governmental or NGO actions`,
+         `Brian Nosek/Center for Open Science` = `Brian Nosek and COS`,
+         `Publishing culture` = `Journals and publishing culture`) 
 
 
 ##Create a coverage data frame that includes only the nodes reaching the IRR threshold
@@ -198,7 +217,8 @@ df_MFA_articles_2 <- inner_join(df_MFA_articles, df_metadata_2, by="Name") %>%
   mutate(Contrib1_2 = Contrib1 + Contrib2) %>% #create a new variable for contribution on the first factor plane
   mutate(Cos2_1_2 = Cos2_1 + Cos2_2) #create a new variable for cos2 on the first factor plane
  
-df_MFA_articles_3 <- inner_join(df_MFA_articles_2, df_auto_code, by = "Name") #add the auto-code data to the articles data frame
+df_MFA_articles_3 <- inner_join(df_MFA_articles_2, df_auto_code, by = "Name") %>% #add the auto-code data to the articles data frame
+  mutate(Psychology_log_trans = log1p(`Psychology (auto)`))
 
 
 ##Create figures using ggplot
@@ -208,8 +228,8 @@ ggplot(df_MFA_nodes_2, label=Node,
   geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
   geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
   theme_bw()+
-  geom_point(data= df_MFA_articles_3, size=0.7,
-             aes(x=Dim1, y=Dim2, color=`Psychology (auto)`))+
+  geom_point(data= df_MFA_articles_3, size=1.2,
+             aes(x=Dim1, y=Dim2, color=Psychology_log_trans))+
   scale_color_viridis(direction = -1, option = "D")+
   geom_point(shape=1, aes(size=Contrib1_2))+
   geom_text_repel(data = filter(df_MFA_nodes_2, Contrib1_2 > 3.8),
@@ -225,7 +245,7 @@ ggplot(df_MFA_articles_3,
   geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
   geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
   theme_bw()+
-  geom_point(size=0.7, aes(color=`Psychology (auto)`))+
+  geom_point(size=1.2, aes(color=Psychology_log_trans))+
   scale_color_viridis(direction = -1)+
   geom_point(data = df_MFA_nodes_3, shape=1,
              aes(x=Dim1, y=Dim2, size=Contrib1_2, group=Year))+
