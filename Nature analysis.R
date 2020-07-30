@@ -237,7 +237,9 @@ df_article_attrib_2 %>%
   arrange(author) %>% 
   ggplot(aes(fill=author, values = n))+
   geom_waffle(n_rows = 10, flip = T, color = "white")+
-  facet_wrap(~ Audience) +
+  facet_wrap(~ Audience,
+             labeller = labeller(Audience = c(Popular = "Popular (n = 136)",
+                                              Scientific = "Scientific (n = 217)"))) +
   coord_equal() +
   scale_fill_manual(values = c(cols[1], cols[3], cols[2]),
                     breaks = c("Journalist", "Scientist", "Other")) +
@@ -247,7 +249,8 @@ df_article_attrib_2 %>%
   theme(legend.position = "bottom") +
   labs(fill = "Author")
 
-
+## saved to svg with 550x550 px size
+## edited in Inkscape to add "a" label
 
 
 #Plot Fig 1b using ggplot
@@ -338,6 +341,7 @@ df_CA_quali_sup_var <- data_frame("Dim_1" = quali_sup_coord_1,
   mutate(Name = str_remove(Name, "audience."))
 
 df_CA_results_sup_var <- bind_rows(df_CA_quali_sup_var, df_CA_quant_sup_var)
+
 
 #Plot Fig 2a using ggplot
 ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_2)) +
