@@ -247,7 +247,9 @@ ggplot(df_MFA_articles_3,
   theme_bw()+
   geom_point(size=1.2, aes(color=Psychology_log_trans))+
   scale_color_viridis(direction = -1)+
-  geom_point(data = df_MFA_nodes_3, shape=1,
+  geom_point(data = subset(df_MFA_nodes_3, Contrib1_2 > 4), shape=1,
+             aes(x=Dim1, y=Dim2, size=Contrib1_2, group=Year))+
+  geom_point(data = subset(df_MFA_nodes_3, Contrib1_2 < 4), shape=1, alpha=0.4,
              aes(x=Dim1, y=Dim2, size=Contrib1_2, group=Year))+
   geom_text_repel(data= subset(df_MFA_nodes_3, Contrib1_2 > 4), 
                   aes(label=Node),
