@@ -514,7 +514,8 @@ ggplot(df_mean_article_year,
 ggplot(df_mean_article_year,
        aes(x=year, y=node, fill=coverage))+
   geom_tile()+
-  scale_fill_viridis(discrete = FALSE)
+  scale_fill_viridis(discrete = FALSE)+
+  labs(fill="% coverage", x="", y="")
     
 #Plot something kind of like sparklines (not happy with this yet)
 ggplot(df_mean_article_year,
