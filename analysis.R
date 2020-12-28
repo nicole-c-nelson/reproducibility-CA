@@ -170,8 +170,10 @@ coverage_CA_result <- CA(df_coverage_5, #perform CA
 view(coverage_CA_result$eig)
 view(coverage_CA_result$col$contrib)
 
+Factoshiny(df_coverage_5)
+
 #Investigate(coverage_CA_result) #generate automatic CA report; doesn't work
-#summary_coverage_CA <- summary.CA(coverage_CA_result, nbelements = Inf, ncp = 5) #output CA summary result, makes a messy object that I'm not sure how to deal with
+summary_coverage_CA <- summary.CA(coverage_CA_result, nbelements = Inf, ncp = 5) #output CA summary result, makes a messy object that I'm not sure how to deal with
 
 dimdesc_1_3 <- dimdesc(coverage_CA_result, axes = 1:3, proba = 0.01) #create dimension descriptions
 
@@ -649,8 +651,35 @@ ggplot(MFA_partial_points,
             size = 2, vjust = 0, nudge_y = 0.2, check_overlap = TRUE)
 
 
+ellipseCA(CA_result)
+
+Factoshiny(CA_result)
+
+fviz(CA_result, element = "col", axes = c(1,3), invisible = c("quali"), addEllipses = TRUE)
 
 
+fviz_cluster(HCPC_result, axes = c(1, 3), geom(c("point")), ellipse = TRUE,
+             ellipse.type = "convex",
+             ellipse.level = 0.95,)
+
+data("housetasks")
+res.ca <- CA(housetasks, graph = FALSE)
+ellipseCA(res.ca)
+fviz(res.ca, element = "row", addEllipses = TRUE)
+
+data(decathlon)
+res.pca <- PCA(decathlon, quanti.sup = 11:12, quali.sup = 13,graph=FALSE)
+aa <- cbind.data.frame(decathlon[,13],res.pca$ind$coord)
+bb <- coord.ellipse(aa,bary=TRUE)
+plot(res.pca,habillage=13,ellipse=bb)
+
+aa <- df_CA_results_articles_2 %>%
+  column_to_rownames(var = "Name") %>%
+  select(clust, Dim_1, Dim_3)
+  cc <- coord.ellipse(aa, bary = TRUE)
+plot(CA_result, axes = c(1,3), ellipse=cc)
+
+ellipseCA(CA_result, ellipse = c("col"), method = "multinomial", axes = c(1, 2))
 
 ###Code graveyard below! Stuff that I'm not using for now
 
