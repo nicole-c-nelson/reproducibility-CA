@@ -187,7 +187,7 @@ CA_result <- CA(df_coverage_5, #perform CA
                          graph = FALSE) 
 
 #Create a description of the first three dimensions of the CA
-dimdesc_1_3 <- dimdesc(CA_result, axes = 1:3, proba = 0.01)
+dimdesc_1_3 <- dimdesc(CA_result, axes = 1:3, proba = 0.05)
 
 #View tables of correlations of supplementary variables with Dim 1 and Dim 2
 view(dimdesc_1_3$`Dim 1`$quanti) 
