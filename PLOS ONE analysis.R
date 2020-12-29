@@ -8,6 +8,7 @@ library(ggrepel)
 library(factoextra)
 library(knitr)
 library(waffle)
+library(moderndive)
 
 ###Read IRR and node summary files
 IRR_files <- dir_ls("Data/IRR files") #create list of all files in the IRR data folder
@@ -207,6 +208,51 @@ MFA_auth_result <-MFA(df_coverage_sorted_by_auth_2,
                       group=c(120,25,208),type=c('f','f','f'),
                       name.group=c('Journalist', 'Other', 'Scientist'),
                       num.group.sup=c(2),graph=FALSE)
+
+
+# Bootstrap analysis-------------------------------------------------------
+
+#I think this first way is not going to work because it just gives the coordinates for the supplementary individuals, not the codes
+
+#df_bootstrap_sample <- df_coverage_2 %>%
+  #rep_sample_n(size=353, replace=TRUE, reps = 100)
+
+#df_coverage_bootstrap <- df_bootstrap_sample %>%
+  #filter(replicate==1) %>%
+  #ungroup() %>%
+  #select(-replicate) %>%
+  #mutate(Name = paste0(runif(353), Name)) %>% 
+  #bind_rows(., df_coverage_2, id=NULL) %>%
+  #column_to_rownames(var = "Name")
+
+#CA_bootstrap_result <- CA(df_coverage_bootstrap,
+                          #row.sup = c(1:353),
+                          #graph = FALSE)
+
+#this way does seem to work with MFA
+df_bootstrap_sample <- df_coverage_2 %>%
+  rep_sample_n(size=353, replace=TRUE, reps = 8)
+
+df_coverage_bootstrap <- df_bootstrap_sample %>%
+  ungroup() %>%
+  select(-replicate) %>%
+  bind_rows(., df_coverage_2, id=NULL) %>%
+  bind_rows(., df_coverage_2, id=NULL) %>%
+  mutate(Name = paste0(runif(3530), Name)) %>% #random number added because otherwise Names aren't unique and can't be set to row names
+  column_to_rownames(var = "Name") #you have to do this for FactoMineR, but I always do this as the last step because tidyverse functions often erase the row names
+
+df_coverage_bootstrap_2 <- data.frame(t(df_coverage_bootstrap))
+  
+MFA_bootstrap_result <- MFA(df_coverage_bootstrap_2,
+                         group=c(353,353,353,353,353,353,353,353,353,353),
+                         type=c('f','f','f','f','f','f','f','f','f','f'),
+                         num.group.sup=c(1,2,3,4,5,6,7,8),
+                         graph=FALSE)
+
+#looks like the max number of groups is ten, and you have to have at least two active groups
+#so, I have done eight bootstrap samples and two of the original data set
+#in the MFA object, the coordinates are MFA_bootstrap_result$separate.analyses$Gr1$ind$coord (the group number is different for each, though, obvs)
+#so, in theory we could run this a lot of times, getting data for eight bootstrap samples each time?
 
 
 # Figure 1 ----------------------------------------------------------------

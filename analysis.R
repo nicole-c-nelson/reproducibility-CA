@@ -9,6 +9,7 @@ library(ggridges)
 library(ggrepel)
 library(factoextra)
 library(psychometric)
+library(moderndive)
 
 
 
@@ -651,9 +652,22 @@ ggplot(MFA_partial_points,
             size = 2, vjust = 0, nudge_y = 0.2, check_overlap = TRUE)
 
 
-ellipseCA(CA_result)
+#messing around with ellipses
 
-Factoshiny(CA_result)
+noise <- function(x, na.rm = FALSE) x + abs(rnorm(1, mean = 0, sd = .001))
+multiply1000 <- function(x, na.rm = FALSE) x*1000
+multiply100 <- function(x, na.rm = FALSE) x*100
+multiply50 <- function(x, na.rm = FALSE) x*50
+
+df_coverage_6 <- df_coverage_4 %>%
+  select(c(1:30))%>%
+  mutate_at(c(2:30), multiply50) %>%
+  column_to_rownames(var = "Name")
+
+CA_result <- CA(df_coverage_6, #perform CA
+                graph = FALSE)
+
+ellipseCA(CA_result, ellipse = c("col"), axes = c(1,2), col.row="white")
 
 fviz(CA_result, element = "col", axes = c(1,3), invisible = c("quali"), addEllipses = TRUE)
 
@@ -663,9 +677,11 @@ fviz_cluster(HCPC_result, axes = c(1, 3), geom(c("point")), ellipse = TRUE,
              ellipse.level = 0.95,)
 
 data("housetasks")
+view(housetasks)
 res.ca <- CA(housetasks, graph = FALSE)
-ellipseCA(res.ca)
+ellipseCA(res.ca, ellipse=c("col"))
 fviz(res.ca, element = "row", addEllipses = TRUE)
+
 
 data(decathlon)
 res.pca <- PCA(decathlon, quanti.sup = 11:12, quali.sup = 13,graph=FALSE)
@@ -687,21 +703,34 @@ ellipseCA(CA_result, ellipse = c("col"), method = "multinomial", axes = c(1, 2))
 df_count <- summary_files %>%
   map_dfr(read_xlsx, .id = "node") %>% #read in every file; add "node" variable based on file name
   select(node, Name, References) %>% #select 3 relevant variables
-  mutate(node = str_sub(node, start = 25, end = -6)) %>% #fix name of nodes
-  pivot_wider(names_from = "node", values_from = "References", values_fill = list(References = 0)) #switch to wide data format; fill empty cells with 0
+  mutate(node = str_sub(node, start = 36, end = -6)) %>% #fix name of nodes
+  pivot_wider(names_from = "node", values_from = "References", values_fill = list(References = 0)) %>% #switch to wide data format; fill empty cells with 0
+  mutate(Name = str_replace_all(Name, "[^a-zA-Z0-9]", "")) %>% #remove special characters, which cause errors in some people's systems  
+  rename(`Bayesian statistics` = `Bayesian stats`, #fix node names
+         `Heterogeneity` = `Heterogeneity complexity`,
+         `Field differences` = `Stakes differ by fields`,
+         `Methods training` = `Training in research methods`,
+         `Transparency` = `Transparency of data or methodology`,
+         `P values` = `P-values`,
+         `Government/NGO actions` = `Governmental or NGO actions`,
+         `Brian Nosek/Center for Open Science` = `Brian Nosek and COS`,
+         `Publishing culture` = `Journals and publishing culture`) 
 
 df_count_2 <- df_count %>% 
-  select(colnames(df_IRR_2)) %>% #select nodes matching those in the filtered IRR table
-  select(Name, everything()) #put name column first
+  select(colnames(df_IRR_2)) %>% #select nodes matching those in the filtered IRR table 
+  column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
+
 
 #join metadata to coverage dataframe
-df_count_3 <- inner_join(df_count_2, df_metadata_6, by = "Name")
+df_count_3 <- inner_join(df_count_2, df_metadata_5, by = "Name")
 
 #set article names to row names for FactomineR analysis
 df_count_4 <- df_count_3 %>%
   column_to_rownames(var = "Name") #set article names to row names, rather than a separate column
 
-result_CA_count <- Factoshiny(df_count_4)
+result_CA_count <- CA(df_count_2)
+ellipseCA(result_CA_count, ellipse = c("col"), axes = c(1,2), col.row="white")
+
 
 #Calculating IRR
 #Reading IRR files from NVivo
