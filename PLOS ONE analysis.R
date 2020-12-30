@@ -234,24 +234,54 @@ MFA_auth_result <-MFA(df_coverage_sorted_by_auth_2,
 #If we could run this code below 100x or 1000x, that should give us what we need
 #On each rep, we'd need to remove the data from MFA_bootstrap_result$separate.analyses$Gr1$ind$coord[,1,2] at the end of the rep and put it somewhere
 
-df_bootstrap_sample <- df_coverage_2 %>%
+# function to do a single bootstrap replicate of the MFA analysis
+# and return a dataframe with the nodes and the coordinates of the
+# two dimensions
+# takes the dataframe to be analyzed as its only input
+bootstrap_MFA <- function(df) {
+
+df_bootstrap_sample <- df %>%
   rep_sample_n(size=353, replace=TRUE, reps = 1)
 
 df_coverage_bootstrap <- df_bootstrap_sample %>%
   ungroup() %>%
   select(-replicate) %>%
-  bind_rows(., df_coverage_2, id=NULL) %>%
-  bind_rows(., df_coverage_2, id=NULL) %>%
-  mutate(Name = paste0(runif(1059), Name)) %>% #random number added because otherwise Names aren't unique and can't be set to row names
+  bind_rows(., df, id=NULL) %>%
+  bind_rows(., df, id=NULL) %>%
+  mutate(Name = paste0(Name, runif(1059))) %>% #random number added because otherwise Names aren't unique and can't be set to row names
   column_to_rownames(var = "Name") #you have to do this for FactoMineR, but I always do this as the last step because tidyverse functions often erase the row names
 
 df_coverage_bootstrap_2 <- data.frame(t(df_coverage_bootstrap))
 
 MFA_bootstrap_result <- MFA(df_coverage_bootstrap_2,
-                         group=c(353,353,353),
-                         type=c('f','f','f'),
+                         group=rep(nrow(df), 3),
+                         type=rep('f', 3),
                          #num.group.sup=c(1),
                          graph=FALSE)
+
+return(as.data.frame(MFA_bootstrap_result$separate.analyses$Gr1$ind$coord[,1:2]) %>% 
+  rownames_to_column(var = "node"))
+}
+
+bootstrap_MFA(df_coverage_2)
+
+#run bootstrap MFA n times and append results
+repeat_bootstrap_MFA  <- function(df, n) {
+  #set up empty results tibble
+  MFA_return <- data.frame(node = character(),
+                           Dim.1 = numeric(),
+                           Dim.2 = numeric(),
+                           replicate = numeric())
+  # run n loops of bootstrap MFA function and append results
+  for(i in 1:n){
+    MFA_result <- bootstrap_MFA(df)
+    MFA_result <- MFA_result %>% 
+      mutate(replicate = i) #add id column for the replicate
+    MFA_return <- bind_rows(MFA_return, MFA_result)
+  }
+  return(MFA_return)
+}
+
 
 #Another way would be to run MFAs with larger numbers of bootstrap samples in them
 #This seems to me like it might be more of a pain, code wise?
