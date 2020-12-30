@@ -212,7 +212,8 @@ MFA_auth_result <-MFA(df_coverage_sorted_by_auth_2,
 
 # Bootstrap analysis-------------------------------------------------------
 
-#I think this first way is not going to work because it just gives the coordinates for the supplementary individuals, not the codes
+#I think this first way is not going to work because it just gives the coordinates for the supplementary individuals
+#It doesn't seem to produce coordinates for where the codes would be based on those supplementary individuals
 
 #df_bootstrap_sample <- df_coverage_2 %>%
   #rep_sample_n(size=353, replace=TRUE, reps = 100)
@@ -229,7 +230,7 @@ MFA_auth_result <-MFA(df_coverage_sorted_by_auth_2,
                           #row.sup = c(1:353),
                           #graph = FALSE)
 
-#this way does seem to work with MFA
+#Using MFA does seem to work, with a few hacks
 df_bootstrap_sample <- df_coverage_2 %>%
   rep_sample_n(size=353, replace=TRUE, reps = 8)
 
@@ -251,7 +252,7 @@ MFA_bootstrap_result <- MFA(df_coverage_bootstrap_2,
 
 #looks like the max number of groups is ten, and you have to have at least two active groups
 #so, I have done eight bootstrap samples and two of the original data set
-#in the MFA object, the coordinates are MFA_bootstrap_result$separate.analyses$Gr1$ind$coord (the group number is different for each, though, obvs)
+#in the MFA object, the coordinates are in MFA_bootstrap_result$separate.analyses$Gr1$ind$coord (the group number is different for each, though, obvs)
 #so, in theory we could run this a lot of times, getting data for eight bootstrap samples each time?
 
 
