@@ -231,29 +231,63 @@ MFA_auth_result <-MFA(df_coverage_sorted_by_auth_2,
                           #graph = FALSE)
 
 #Using MFA does seem to work, with a few hacks
+#If we could run this code below 100x or 1000x, that should give us what we need
+#On each rep, we'd need to remove the data from MFA_bootstrap_result$separate.analyses$Gr1$ind$coord[,1,2] at the end of the rep and put it somewhere
+
 df_bootstrap_sample <- df_coverage_2 %>%
-  rep_sample_n(size=353, replace=TRUE, reps = 8)
+  rep_sample_n(size=353, replace=TRUE, reps = 1)
 
 df_coverage_bootstrap <- df_bootstrap_sample %>%
   ungroup() %>%
   select(-replicate) %>%
   bind_rows(., df_coverage_2, id=NULL) %>%
   bind_rows(., df_coverage_2, id=NULL) %>%
-  mutate(Name = paste0(runif(3530), Name)) %>% #random number added because otherwise Names aren't unique and can't be set to row names
+  mutate(Name = paste0(runif(1059), Name)) %>% #random number added because otherwise Names aren't unique and can't be set to row names
   column_to_rownames(var = "Name") #you have to do this for FactoMineR, but I always do this as the last step because tidyverse functions often erase the row names
 
 df_coverage_bootstrap_2 <- data.frame(t(df_coverage_bootstrap))
-  
+
 MFA_bootstrap_result <- MFA(df_coverage_bootstrap_2,
-                         group=c(353,353,353,353,353,353,353,353,353,353),
-                         type=c('f','f','f','f','f','f','f','f','f','f'),
-                         num.group.sup=c(1,2,3,4,5,6,7,8),
+                         group=c(353,353,353),
+                         type=c('f','f','f'),
+                         #num.group.sup=c(1),
                          graph=FALSE)
 
-#looks like the max number of groups is ten, and you have to have at least two active groups
-#so, I have done eight bootstrap samples and two of the original data set
-#in the MFA object, the coordinates are in MFA_bootstrap_result$separate.analyses$Gr1$ind$coord (the group number is different for each, though, obvs)
-#so, in theory we could run this a lot of times, getting data for eight bootstrap samples each time?
+#Another way would be to run MFAs with larger numbers of bootstrap samples in them
+#This seems to me like it might be more of a pain, code wise?
+#The MFA is kinda long, and then the data ends up in 49 different groups at the end
+
+df_bootstrap_sample <- df_coverage_2 %>%
+  rep_sample_n(size=353, replace=TRUE, reps = 49)
+
+df_coverage_bootstrap <- df_bootstrap_sample %>%
+  ungroup() %>%
+  select(-replicate) %>%
+  bind_rows(., df_coverage_2, id=NULL) %>%
+  mutate(Name = paste0(runif(17650), Name)) %>% #random number added because otherwise Names aren't unique and can't be set to row names
+  column_to_rownames(var = "Name") #you have to do this for FactoMineR, but I always do this as the last step because tidyverse functions often erase the row names
+
+df_coverage_bootstrap_2 <- data.frame(t(df_coverage_bootstrap))
+
+
+MFA_bootstrap_result <- MFA(df_coverage_bootstrap_2,
+                            group=c(353,353,353,353,353,353,353,353,353,353,
+                                    353,353,353,353,353,353,353,353,353,353,
+                                    353,353,353,353,353,353,353,353,353,353,
+                                    353,353,353,353,353,353,353,353,353,353,
+                                    353,353,353,353,353,353,353,353,353,353),
+                            type=c('f','f','f','f','f','f','f','f','f','f',
+                                   'f','f','f','f','f','f','f','f','f','f',
+                                   'f','f','f','f','f','f','f','f','f','f',
+                                   'f','f','f','f','f','f','f','f','f','f',
+                                   'f','f','f','f','f','f','f','f','f','f'),
+                            graph=FALSE)
+
+plot.MFA(MFA_bootstrap_result, choix="ind",partial=c('Bayesian statistics','Reagents', 
+                                                     'P values', 'Heterogeneity', 'Impact on policy or habits', 
+                                                     'Amgen or Bayer studies', 'Sample size and power',
+                                                     'Brian Nosek/Center for Open Science'),
+         lab.par=FALSE,habillage='group')
 
 
 # Figure 1 ----------------------------------------------------------------
