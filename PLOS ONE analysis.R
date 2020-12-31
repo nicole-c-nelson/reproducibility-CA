@@ -284,40 +284,58 @@ repeat_bootstrap_MFA  <- function(df, n) {
 
 
 #Another way would be to run MFAs with larger numbers of bootstrap samples in them
-#This seems to me like it might be more of a pain, code wise?
-#The MFA is kinda long, and then the data ends up in 49 different groups at the end
 
 df_bootstrap_sample <- df_coverage_2 %>%
-  rep_sample_n(size=353, replace=TRUE, reps = 49)
+  rep_sample_n(size=353, replace=TRUE, reps = 99)
 
 df_coverage_bootstrap <- df_bootstrap_sample %>%
   ungroup() %>%
   select(-replicate) %>%
   bind_rows(., df_coverage_2, id=NULL) %>%
-  mutate(Name = paste0(runif(17650), Name)) %>% #random number added because otherwise Names aren't unique and can't be set to row names
+  mutate(Name = paste0(runif(35300), Name)) %>% #random number added because otherwise Names aren't unique and can't be set to row names
   column_to_rownames(var = "Name") #you have to do this for FactoMineR, but I always do this as the last step because tidyverse functions often erase the row names
 
 df_coverage_bootstrap_2 <- data.frame(t(df_coverage_bootstrap))
 
 
 MFA_bootstrap_result <- MFA(df_coverage_bootstrap_2,
-                            group=c(353,353,353,353,353,353,353,353,353,353,
-                                    353,353,353,353,353,353,353,353,353,353,
-                                    353,353,353,353,353,353,353,353,353,353,
-                                    353,353,353,353,353,353,353,353,353,353,
-                                    353,353,353,353,353,353,353,353,353,353),
-                            type=c('f','f','f','f','f','f','f','f','f','f',
-                                   'f','f','f','f','f','f','f','f','f','f',
-                                   'f','f','f','f','f','f','f','f','f','f',
-                                   'f','f','f','f','f','f','f','f','f','f',
-                                   'f','f','f','f','f','f','f','f','f','f'),
+                            group=rep(353, 100),
+                            type=rep('f', 100),
                             graph=FALSE)
 
-plot.MFA(MFA_bootstrap_result, choix="ind",partial=c('Bayesian statistics','Reagents', 
-                                                     'P values', 'Heterogeneity', 'Impact on policy or habits', 
-                                                     'Amgen or Bayer studies', 'Sample size and power',
-                                                     'Brian Nosek/Center for Open Science'),
-         lab.par=FALSE,habillage='group')
+bootstrap_partial_rownames <- rownames(MFA_bootstrap_result$ind$coord.partiel)
+
+bootstrap_partial_points <- as_tibble(MFA_bootstrap_result$ind$coord.partiel) %>%
+  `rownames<-` (bootstrap_partial_rownames) %>%
+  rownames_to_column(var = "Name") %>%
+  mutate(Group = str_extract(Name, "[^\\\\.]+$")) %>%
+  mutate(Node = str_remove(Name, "\\..*")) %>%
+  select(-Name)
+
+bootstrap_rownames <- rownames(MFA_bootstrap_result$ind$coord)
+
+bootstrap_points <- as_tibble(MFA_bootstrap_result$ind$coord) %>%
+  `rownames<-` (bootstrap_rownames) %>%
+  rownames_to_column(var = "Name") %>%
+  mutate(Node = Name) %>%
+  select(-Name)
+
+bootstrap_hull <- bootstrap_partial_points %>%
+  group_by(Node) %>%
+  slice(chull(Dim.1, Dim.2))
+
+ggplot(bootstrap_partial_points, aes(x=Dim.1, y=Dim.2, fill=Node))+
+  geom_point(aes(color=Node))+
+  geom_point(data=filter(bootstrap_partial_points, Group == "Gr100"),
+             color="black", shape=19, size=3)+
+  geom_point(data=bootstrap_points,
+             aes(x=Dim.1, y=Dim.2),
+             color="black", shape=17, size=3)+
+  geom_polygon(data=bootstrap_hull, alpha=0.25)
+
+ggplot(bootstrap_partial_points, aes(x=Dim.1,y=Dim.2))+
+  geom_point(size=0.8, alpha=0.2)+
+  facet_wrap(~Node)
 
 
 # Figure 1 ----------------------------------------------------------------
