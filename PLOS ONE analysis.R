@@ -9,6 +9,7 @@ library(factoextra)
 library(knitr)
 library(waffle)
 library(moderndive)
+library(vegan)
 
 ###Read IRR and node summary files
 IRR_files <- dir_ls("Data/IRR files") #create list of all files in the IRR data folder
@@ -234,6 +235,7 @@ MFA_auth_result <-MFA(df_coverage_sorted_by_auth_2,
 #If we could run this code below 100x or 1000x, that should give us what we need
 #On each rep, we'd need to remove the data from MFA_bootstrap_result$separate.analyses$Gr1$ind$coord[,1,2] at the end of the rep and put it somewhere
 
+
 df_bootstrap_sample <- df_coverage_2 %>%
   rep_sample_n(size=353, replace=TRUE, reps = 1)
 
@@ -253,41 +255,90 @@ MFA_bootstrap_result <- MFA(df_coverage_bootstrap_2,
                          #num.group.sup=c(1),
                          graph=FALSE)
 
-#Another way would be to run MFAs with larger numbers of bootstrap samples in them
-#This seems to me like it might be more of a pain, code wise?
-#The MFA is kinda long, and then the data ends up in 49 different groups at the end
 
+#Another way would be to run MFAs with larger numbers of bootstrap samples in them
+
+nrep <- 100
 df_bootstrap_sample <- df_coverage_2 %>%
-  rep_sample_n(size=353, replace=TRUE, reps = 49)
+  rep_sample_n(size=353, replace=TRUE, reps = nrep)
 
 df_coverage_bootstrap <- df_bootstrap_sample %>%
   ungroup() %>%
   select(-replicate) %>%
   bind_rows(., df_coverage_2, id=NULL) %>%
-  mutate(Name = paste0(runif(17650), Name)) %>% #random number added because otherwise Names aren't unique and can't be set to row names
-  column_to_rownames(var = "Name") #you have to do this for FactoMineR, but I always do this as the last step because tidyverse functions often erase the row names
+  mutate(Name = paste0(runif((nrep+1)*353), Name)) %>% #random number added because otherwise Names aren't unique and can't be set to row names
+  column_to_rownames(var = "Name") 
 
 df_coverage_bootstrap_2 <- data.frame(t(df_coverage_bootstrap))
 
 
 MFA_bootstrap_result <- MFA(df_coverage_bootstrap_2,
-                            group=c(353,353,353,353,353,353,353,353,353,353,
-                                    353,353,353,353,353,353,353,353,353,353,
-                                    353,353,353,353,353,353,353,353,353,353,
-                                    353,353,353,353,353,353,353,353,353,353,
-                                    353,353,353,353,353,353,353,353,353,353),
-                            type=c('f','f','f','f','f','f','f','f','f','f',
-                                   'f','f','f','f','f','f','f','f','f','f',
-                                   'f','f','f','f','f','f','f','f','f','f',
-                                   'f','f','f','f','f','f','f','f','f','f',
-                                   'f','f','f','f','f','f','f','f','f','f'),
+                            group=rep(353,(nrep+1)),
+                            type=rep('f',(nrep+1)),
                             graph=FALSE)
 
-plot.MFA(MFA_bootstrap_result, choix="ind",partial=c('Bayesian statistics','Reagents', 
-                                                     'P values', 'Heterogeneity', 'Impact on policy or habits', 
-                                                     'Amgen or Bayer studies', 'Sample size and power',
-                                                     'Brian Nosek/Center for Open Science'),
-         lab.par=FALSE,habillage='group')
+bootstrap_rownames <- rownames(MFA_bootstrap_result$ind$coord.partiel)
+
+df_bootstrap_partial_points <- as_tibble(MFA_bootstrap_result$ind$coord.partiel) %>%
+  `rownames<-`(bootstrap_rownames) %>%
+  rownames_to_column(var = "Name") %>%
+  mutate(Group = as.numeric(str_replace_all(Name, "[^0-9]", ""))) %>%
+  mutate(Node = str_remove(Name, "\\..*")) %>%
+  select(-Name) 
+
+df_bootstrap_hull <- df_bootstrap_partial_points %>%
+  group_by(Node) %>%
+  slice(chull(Dim.1, Dim.2))
+
+#plot MFA bootstrap results
+ggplot(df_bootstrap_partial_points, aes(x=Dim.1, y=Dim.2, fill=Node))+
+  geom_point(aes(color=Node))+
+  geom_point(data=filter(df_bootstrap_partial_points, Group == (nrep+1)), color="black", shape=17, size=3)+
+  geom_polygon(data = df_bootstrap_hull, alpha = 0.25)
+  #stat_bag(prop = 0.90)
+
+##Momin's code
+df <- as.data.frame(df_coverage_2)
+rownames(df) <- df$Name
+df <- df[,-1]
+
+nboot <- 1000
+boot <- array(data = NA,
+              dim = c(nboot, 2, ncol(df)),
+              dimnames = list(bootiter = 1:nboot,
+                              coords = c("Dim 1", "Dim 2"),
+                              col = names(df)))
+errors <- rep(NA, nboot)
+for (i in 1:nboot) {
+  CA_boot <- CA(df[sample(x = 1:nrow(df),
+                          replace = T),],
+                ncp = 2,
+                graph = FALSE)
+  rotated <- vegan::procrustes(CA_result$col$coord[,1:2],
+                               CA_boot$col$coord[,1:2])
+  errors[i] <- rotated$ss
+  boot[i,,] <- t(fitted(rotated))
+  if (i%%100==0) {print(i)}
+}
+
+hist(errors, breaks = 500)
+hist(log(errors), breaks = 100)
+
+plot(CA_result$col$coord[,1:2], pch = 19, cex = .2,
+     ylim = c(-2, 3),
+     xlim = c(-3, 3))
+points(apply(boot, c(3,2), median), pch = 19, cex = .2, col = "lightgray")
+for (i in 1:ncol(df)) {
+  points <- boot[,,i]
+  repeat { # http://carme-n.org/?sec=code2
+    hpts <- chull(points)
+    npts <- nrow(points[-hpts,]) #next number of points in peeled set
+    if(npts/nboot < 0.5) break
+    points <- points[-hpts,]
+  }
+  hpts <- c(hpts,hpts[1])
+  lines(points[hpts,], lty = 3)
+}
 
 
 # Figure 1 ----------------------------------------------------------------
