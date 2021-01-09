@@ -308,6 +308,7 @@ df_bootstrap_nodes <- as_tibble(MFA_bootstrap_result$ind$coord) %>%
   mutate(Group = as.numeric(str_replace_all(Name, "[^0-9]", ""))) %>%
   mutate(Node = str_remove(Name, "\\..*")) %>%
   select(-Name) 
+# saveRDS(df_bootstrap_nodes, file = "df_bootstrap_nodes_1000.RDS")
 
 #extract partial points from MFA object
 bootstrap_rownames <- rownames(MFA_bootstrap_result$ind$coord.partiel)
@@ -322,18 +323,19 @@ df_bootstrap_partial_points <- as_tibble(MFA_bootstrap_result$ind$coord.partiel)
 
 #read the RDS files
 df_bootstrap_partial_points <- readRDS("df_bootstrap_partial_points_1000.RDS")
+df_bootstrap_nodes <- readRDS("df_bootstrap_nodes_1000.RDS")
 
 # function to peel convex hull of the point cloud for each node
 hull_peel <- function(df, threshold = 0.95) {
-  nboot <- nrow(df) #number of replicates
+  nboot <- nrow(df) #calculate number of replicates
   #loop to peel hull points until threshold is reached
   repeat {
   hpts <- chull(df$Dim.1, df$Dim.2) #get indices of hull points
-  npts <- nrow(df[-hpts,]) #number of hull points
-  if(npts/nboot < threshold) break #check whether proportion of hull points to total is below threshold
+  npts <- nrow(df[-hpts,]) #calculate number of points remaining after removing the hull points
+  if(npts/nboot < threshold) break #check whether proportion of remaining points to original number of replicates is below threshold
   df <- df[-hpts,] #remove hull points
   }
-  return(df[hpts,]) #return coordinate pairs
+  return(df[hpts,]) #return hull points
 }
 
 # apply hull_peel function for each node
@@ -348,26 +350,9 @@ ggplot(df_bootstrap_partial_points, aes(x=Dim.1, y=Dim.2, fill=Node))+
   geom_polygon(data = df_bootstrap_hull, alpha = 0.25)
 
 #plot a subset of the nodes
-df_bootstrap_partial_points_2 <- df_bootstrap_partial_points %>%
-  filter(Node %in% c("Amgen or Bayer studies",
-                     #"Andrew Gelman",
-                     "Bayesian statistics",
-                     "Brian Nosek/Center for Open Science",
-                     "Economic cost",
-                     "Fraud",
-                     "Heterogeneity",
-                     "Incentives",
-                     #"John Ioannidis",
-                     "Legitimacy of science",
-                     "P values",
-                     "Peer review",
-                     "Pre-registration",
-                     "Publishing culture",
-                     "Reagents",
-                     "Sample size and power",
-                     "Transparency"))
 
-df_bootstrap_hull_2 <- df_bootstrap_hull %>%
+node_filter <- function(df) {
+  df %>%
   filter(Node %in% c("Amgen or Bayer studies",
                      #"Andrew Gelman",
                      "Bayesian statistics",
@@ -385,14 +370,25 @@ df_bootstrap_hull_2 <- df_bootstrap_hull %>%
                      "Reagents",
                      "Sample size and power",
                      "Transparency"))
+}
+
+df_bootstrap_partial_points_2 <- df_bootstrap_partial_points %>%
+  node_filter()
+df_bootstrap_hull_2 <- df_bootstrap_hull %>%
+  node_filter()
+df_bootstrap_nodes_2 <- df_bootstrap_nodes %>%
+  node_filter()
 
 ggplot(df_bootstrap_partial_points_2, aes(x=Dim.1, y=Dim.2, fill=Node))+
   theme_bw()+
-  geom_point(aes(color=Node), size=0.6)+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
+  geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
+  geom_point(aes(color=Node), size=0.5)+
   geom_polygon(data = df_bootstrap_hull_2, alpha = 0.4)+
-  geom_point(data=filter(df_bootstrap_partial_points_2, Group == (1001)), color="black", shape=17, size=3)+
-  geom_text_repel(data=filter(df_bootstrap_partial_points_2, Group == (1001)),aes(label=Node))
-
+  geom_point(data=filter(df_bootstrap_partial_points_2, Group == 1001), shape=17, size=3)+
+  geom_point(data = df_bootstrap_nodes_2, aes(x=Dim.1, y=Dim.2), shape=2, size=3)+
+  geom_text_repel(data=filter(df_bootstrap_partial_points_2, Group == 1001), aes(label=Node))
 
 
 ##Momin's code
