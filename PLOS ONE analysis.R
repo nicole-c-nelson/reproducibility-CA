@@ -301,6 +301,10 @@ MFA_bootstrap_result <- MFA(df_coverage_bootstrap_2,
 
 bootstrap_rownames <- rownames(MFA_bootstrap_result$ind$coord.partiel)
 
+bootstrap_nodes_rownames <- rownames(MFA_bootstrap_result$ind$coord)
+
+df_bootstrap_nodes <- as_tibble(MFA_bootstrap_result$ind$coord)
+
 df_bootstrap_partial_points <- as_tibble(MFA_bootstrap_result$ind$coord.partiel) %>%
   `rownames<-`(bootstrap_rownames) %>%
   rownames_to_column(var = "Name") %>%
@@ -309,6 +313,17 @@ df_bootstrap_partial_points <- as_tibble(MFA_bootstrap_result$ind$coord.partiel)
   select(-Name) 
 # saveRDS(df_bootstrap_partial_points, file = "df_bootstrap_partial_points_1000.RDS")
 # df_bootstrap_partial_points <- readRDS("df_bootstrap_partial_points_1000.RDS")
+
+bootstrap_nodes_rownames <- rownames(MFA_bootstrap_result$ind$coord)
+
+df_bootstrap_nodes <- as_tibble(MFA_bootstrap_result$ind$coord) %>%
+  `rownames<-`(bootstrap_nodes_rownames) %>%
+  rownames_to_column(var = "Name") %>%
+  mutate(Group = as.numeric(str_replace_all(Name, "[^0-9]", ""))) %>%
+  mutate(Node = str_remove(Name, "\\..*")) %>%
+  select(-Name) 
+
+# saveRDS(df_bootstrap_nodes, file = "df_bootstrap_nodes_1000.RDS")
 
 # function to peel hull of a dataframe containing single node
 hull_peel <- function(df, threshold = 0.95) {
