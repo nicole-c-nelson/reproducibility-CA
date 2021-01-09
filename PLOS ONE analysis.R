@@ -299,21 +299,7 @@ MFA_bootstrap_result <- MFA(df_coverage_bootstrap_2,
                             type=rep('f',(nrep+1)),
                             graph=FALSE)
 
-bootstrap_rownames <- rownames(MFA_bootstrap_result$ind$coord.partiel)
-
-bootstrap_nodes_rownames <- rownames(MFA_bootstrap_result$ind$coord)
-
-df_bootstrap_nodes <- as_tibble(MFA_bootstrap_result$ind$coord)
-
-df_bootstrap_partial_points <- as_tibble(MFA_bootstrap_result$ind$coord.partiel) %>%
-  `rownames<-`(bootstrap_rownames) %>%
-  rownames_to_column(var = "Name") %>%
-  mutate(Group = as.numeric(str_replace_all(Name, "[^0-9]", ""))) %>%
-  mutate(Node = str_remove(Name, "\\..*")) %>%
-  select(-Name) 
-# saveRDS(df_bootstrap_partial_points, file = "df_bootstrap_partial_points_1000.RDS")
-# df_bootstrap_partial_points <- readRDS("df_bootstrap_partial_points_1000.RDS")
-
+#extract node coordinates from MFA object
 bootstrap_nodes_rownames <- rownames(MFA_bootstrap_result$ind$coord)
 
 df_bootstrap_nodes <- as_tibble(MFA_bootstrap_result$ind$coord) %>%
@@ -323,9 +309,21 @@ df_bootstrap_nodes <- as_tibble(MFA_bootstrap_result$ind$coord) %>%
   mutate(Node = str_remove(Name, "\\..*")) %>%
   select(-Name) 
 
-# saveRDS(df_bootstrap_nodes, file = "df_bootstrap_nodes_1000.RDS")
+#extract partial points from MFA object
+bootstrap_rownames <- rownames(MFA_bootstrap_result$ind$coord.partiel)
 
-# function to peel hull of a dataframe containing single node
+df_bootstrap_partial_points <- as_tibble(MFA_bootstrap_result$ind$coord.partiel) %>%
+  `rownames<-`(bootstrap_rownames) %>%
+  rownames_to_column(var = "Name") %>%
+  mutate(Group = as.numeric(str_replace_all(Name, "[^0-9]", ""))) %>%
+  mutate(Node = str_remove(Name, "\\..*")) %>%
+  select(-Name) 
+# saveRDS(df_bootstrap_partial_points, file = "df_bootstrap_partial_points_1000.RDS")
+
+#read the RDS files
+df_bootstrap_partial_points <- readRDS("df_bootstrap_partial_points_1000.RDS")
+
+# function to peel convex hull of the point cloud for each node
 hull_peel <- function(df, threshold = 0.95) {
   nboot <- nrow(df) #number of replicates
   #loop to peel hull points until threshold is reached
@@ -338,19 +336,64 @@ hull_peel <- function(df, threshold = 0.95) {
   return(df[hpts,]) #return coordinate pairs
 }
 
-
-# apply hull_peel function for each Node
+# apply hull_peel function for each node
 df_bootstrap_hull <- df_bootstrap_partial_points %>% 
   group_by(Node) %>% 
   group_modify(~ hull_peel(.x))
 
-
-
+#plot bootstrap samples and hulls
 ggplot(df_bootstrap_partial_points, aes(x=Dim.1, y=Dim.2, fill=Node))+
-  geom_point(aes(color=Node), alpha = .1)+
-  geom_point(data=filter(df_bootstrap_partial_points, Group == (nrep+1)), color="black", shape=17, size=3)+
+  geom_point(aes(color=Node), size = 0.7)+
+  geom_point(data=filter(df_bootstrap_partial_points, Group == (1001)), color="black", shape=17, size=3)+
   geom_polygon(data = df_bootstrap_hull, alpha = 0.25)
-  #stat_bag(prop = 0.90)
+
+#plot a subset of the nodes
+df_bootstrap_partial_points_2 <- df_bootstrap_partial_points %>%
+  filter(Node %in% c("Amgen or Bayer studies",
+                     #"Andrew Gelman",
+                     "Bayesian statistics",
+                     "Brian Nosek/Center for Open Science",
+                     "Economic cost",
+                     "Fraud",
+                     "Heterogeneity",
+                     "Incentives",
+                     #"John Ioannidis",
+                     "Legitimacy of science",
+                     "P values",
+                     "Peer review",
+                     "Pre-registration",
+                     "Publishing culture",
+                     "Reagents",
+                     "Sample size and power",
+                     "Transparency"))
+
+df_bootstrap_hull_2 <- df_bootstrap_hull %>%
+  filter(Node %in% c("Amgen or Bayer studies",
+                     #"Andrew Gelman",
+                     "Bayesian statistics",
+                     "Brian Nosek/Center for Open Science",
+                     "Economic cost",
+                     "Fraud",
+                     "Heterogeneity",
+                     "Incentives",
+                     #"John Ioannidis",
+                     "Legitimacy of science",
+                     "P values",
+                     "Peer review",
+                     "Pre-registration",
+                     "Publishing culture",
+                     "Reagents",
+                     "Sample size and power",
+                     "Transparency"))
+
+ggplot(df_bootstrap_partial_points_2, aes(x=Dim.1, y=Dim.2, fill=Node))+
+  theme_bw()+
+  geom_point(aes(color=Node), size=0.6)+
+  geom_polygon(data = df_bootstrap_hull_2, alpha = 0.4)+
+  geom_point(data=filter(df_bootstrap_partial_points_2, Group == (1001)), color="black", shape=17, size=3)+
+  geom_text_repel(data=filter(df_bootstrap_partial_points_2, Group == (1001)),aes(label=Node))
+
+
 
 ##Momin's code
 df <- as.data.frame(df_coverage_2)
