@@ -281,7 +281,7 @@ repeat_bootstrap_MFA  <- function(df, n) {
 
 #Another way would be to run MFAs with larger numbers of bootstrap samples in them
 
-nrep <- 100
+nrep <- 1000
 df_bootstrap_sample <- df_coverage_2 %>%
   rep_sample_n(size=353, replace=TRUE, reps = nrep)
 
@@ -307,13 +307,32 @@ df_bootstrap_partial_points <- as_tibble(MFA_bootstrap_result$ind$coord.partiel)
   mutate(Group = as.numeric(str_replace_all(Name, "[^0-9]", ""))) %>%
   mutate(Node = str_remove(Name, "\\..*")) %>%
   select(-Name) 
+# saveRDS(df_bootstrap_partial_points, file = "df_bootstrap_partial_points_1000.RDS")
+# df_bootstrap_partial_points <- readRDS("df_bootstrap_partial_points_1000.RDS")
 
-df_bootstrap_hull <- df_bootstrap_partial_points %>%
-  group_by(Node) %>%
-  slice(chull(Dim.1, Dim.2))
+# function to peel hull of a dataframe containing single node
+hull_peel <- function(df, threshold = 0.95) {
+  nboot <- nrow(df) #number of replicates
+  #loop to peel hull points until threshold is reached
+  repeat {
+  hpts <- chull(df$Dim.1, df$Dim.2) #get indices of hull points
+  npts <- nrow(df[-hpts,]) #number of hull points
+  if(npts/nboot < threshold) break #check whether proportion of hull points to total is below threshold
+  df <- df[-hpts,] #remove hull points
+  }
+  return(df[hpts,]) #return coordinate pairs
+}
+
+
+# apply hull_peel function for each Node
+df_bootstrap_hull <- df_bootstrap_partial_points %>% 
+  group_by(Node) %>% 
+  group_modify(~ hull_peel(.x))
+
+
 
 ggplot(df_bootstrap_partial_points, aes(x=Dim.1, y=Dim.2, fill=Node))+
-  geom_point(aes(color=Node))+
+  geom_point(aes(color=Node), alpha = .1)+
   geom_point(data=filter(df_bootstrap_partial_points, Group == (nrep+1)), color="black", shape=17, size=3)+
   geom_polygon(data = df_bootstrap_hull, alpha = 0.25)
   #stat_bag(prop = 0.90)
@@ -348,14 +367,14 @@ hist(log(errors), breaks = 100)
 plot(CA_result$col$coord[,1:2], pch = 19, cex = .2,
      ylim = c(-2, 3),
      xlim = c(-3, 3))
-points(apply(boot, c(3,2), median), pch = 19, cex = .2, col = "lightgray")
+points(apply(boot, c(3,2), median), pch = 19, cex = .2, col = "lightgray") #calculates median coords for each node
 for (i in 1:ncol(df)) {
-  points <- boot[,,i]
+  points <- boot[,,i] #extract first 1000 coords for node i
   repeat { # http://carme-n.org/?sec=code2
     hpts <- chull(points)
     npts <- nrow(points[-hpts,]) #next number of points in peeled set
-    if(npts/nboot < 0.5) break
-    points <- points[-hpts,]
+    if(npts/nboot < 0.5) break #keep repeating until half of points have been removed
+    points <- points[-hpts,] #remove the hulled points
   }
   hpts <- c(hpts,hpts[1])
   lines(points[hpts,], lty = 3)
