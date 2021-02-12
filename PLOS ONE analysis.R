@@ -9,6 +9,7 @@ library(factoextra)
 library(knitr)
 library(waffle)
 library(moderndive)
+library(vegan)
 
 
 ###Read IRR and node summary files
@@ -231,10 +232,6 @@ MFA_auth_result <-MFA(df_coverage_sorted_by_auth_2,
                           #row.sup = c(1:353),
                           #graph = FALSE)
 
-#Using MFA does seem to work, with a few hacks
-#If we could run this code below 100x or 1000x, that should give us what we need
-#On each rep, we'd need to remove the data from MFA_bootstrap_result$separate.analyses$Gr1$ind$coord[,1,2] at the end of the rep and put it somewhere
-
 # function to do a single bootstrap replicate of the MFA analysis
 # and return a dataframe with the nodes and the coordinates of the
 # two dimensions
@@ -283,60 +280,160 @@ repeat_bootstrap_MFA  <- function(df, n) {
   return(MFA_return)
 }
 
-
 #Another way would be to run MFAs with larger numbers of bootstrap samples in them
 
+nrep <- 1000
 df_bootstrap_sample <- df_coverage_2 %>%
-  rep_sample_n(size=353, replace=TRUE, reps = 99)
+  rep_sample_n(size=353, replace=TRUE, reps = nrep)
 
 df_coverage_bootstrap <- df_bootstrap_sample %>%
   ungroup() %>%
   select(-replicate) %>%
   bind_rows(., df_coverage_2, id=NULL) %>%
-  mutate(Name = paste0(runif(35300), Name)) %>% #random number added because otherwise Names aren't unique and can't be set to row names
-  column_to_rownames(var = "Name") #you have to do this for FactoMineR, but I always do this as the last step because tidyverse functions often erase the row names
+  mutate(Name = paste0(runif((nrep+1)*353), Name)) %>% #random number added because otherwise Names aren't unique and can't be set to row names
+  column_to_rownames(var = "Name") 
 
 df_coverage_bootstrap_2 <- data.frame(t(df_coverage_bootstrap))
 
-
 MFA_bootstrap_result <- MFA(df_coverage_bootstrap_2,
-                            group=rep(353, 100),
-                            type=rep('f', 100),
+                            group=rep(353,(nrep+1)),
+                            type=rep('f',(nrep+1)),
                             graph=FALSE)
 
-bootstrap_partial_rownames <- rownames(MFA_bootstrap_result$ind$coord.partiel)
+#extract node coordinates from MFA object
+bootstrap_nodes_rownames <- rownames(MFA_bootstrap_result$ind$coord)
 
-bootstrap_partial_points <- as_tibble(MFA_bootstrap_result$ind$coord.partiel) %>%
-  `rownames<-` (bootstrap_partial_rownames) %>%
+df_bootstrap_nodes <- as_tibble(MFA_bootstrap_result$ind$coord) %>%
+  `rownames<-`(bootstrap_nodes_rownames) %>%
   rownames_to_column(var = "Name") %>%
-  mutate(Group = str_extract(Name, "[^\\\\.]+$")) %>%
+  mutate(Group = as.numeric(str_replace_all(Name, "[^0-9]", ""))) %>%
   mutate(Node = str_remove(Name, "\\..*")) %>%
-  select(-Name)
+  select(-Name) 
+# saveRDS(df_bootstrap_nodes, file = "df_bootstrap_nodes_1000.RDS")
 
-bootstrap_rownames <- rownames(MFA_bootstrap_result$ind$coord)
+#extract partial points from MFA object
+bootstrap_rownames <- rownames(MFA_bootstrap_result$ind$coord.partiel)
 
-bootstrap_points <- as_tibble(MFA_bootstrap_result$ind$coord) %>%
-  `rownames<-` (bootstrap_rownames) %>%
+df_bootstrap_partial_points <- as_tibble(MFA_bootstrap_result$ind$coord.partiel) %>%
+  `rownames<-`(bootstrap_rownames) %>%
   rownames_to_column(var = "Name") %>%
-  mutate(Node = Name) %>%
-  select(-Name)
+  mutate(Group = as.numeric(str_replace_all(Name, "[^0-9]", ""))) %>%
+  mutate(Node = str_remove(Name, "\\..*")) %>%
+  select(-Name) 
+# saveRDS(df_bootstrap_partial_points, file = "df_bootstrap_partial_points_1000.RDS")
 
-bootstrap_hull <- bootstrap_partial_points %>%
-  group_by(Node) %>%
-  slice(chull(Dim.1, Dim.2))
+#read the RDS files
+df_bootstrap_partial_points <- readRDS("df_bootstrap_partial_points_1000.RDS")
+df_bootstrap_nodes <- readRDS("df_bootstrap_nodes_1000.RDS")
 
-ggplot(bootstrap_partial_points, aes(x=Dim.1, y=Dim.2, fill=Node))+
-  geom_point(aes(color=Node))+
-  geom_point(data=filter(bootstrap_partial_points, Group == "Gr100"),
-             color="black", shape=19, size=3)+
-  geom_point(data=bootstrap_points,
-             aes(x=Dim.1, y=Dim.2),
-             color="black", shape=17, size=3)+
-  geom_polygon(data=bootstrap_hull, alpha=0.25)
+# function to peel convex hull of the point cloud for each node
+hull_peel <- function(df, threshold = 0.95) {
+  nboot <- nrow(df) #calculate number of replicates
+  #loop to peel hull points until threshold is reached
+  repeat {
+  hpts <- chull(df$Dim.1, df$Dim.2) #get indices of hull points
+  npts <- nrow(df[-hpts,]) #calculate number of points remaining after removing the hull points
+  if(npts/nboot < threshold) break #check whether proportion of remaining points to original number of replicates is below threshold
+  df <- df[-hpts,] #remove hull points
+  }
+  return(df[hpts,]) #return hull points
+}
 
-ggplot(bootstrap_partial_points, aes(x=Dim.1,y=Dim.2))+
-  geom_point(size=0.8, alpha=0.2)+
-  facet_wrap(~Node)
+# apply hull_peel function for each node
+df_bootstrap_hull <- df_bootstrap_partial_points %>% 
+  group_by(Node) %>% 
+  group_modify(~ hull_peel(.x))
+
+#plot bootstrap samples and hulls
+ggplot(df_bootstrap_partial_points, aes(x=Dim.1, y=Dim.2, fill=Node))+
+  geom_point(aes(color=Node), size = 0.7)+
+  geom_point(data=filter(df_bootstrap_partial_points, Group == (1001)), color="black", shape=17, size=3)+
+  geom_polygon(data = df_bootstrap_hull, alpha = 0.25)
+
+#plot a subset of the nodes
+
+node_filter <- function(df) {
+  df %>%
+  filter(Node %in% c("Amgen or Bayer studies",
+                     #"Andrew Gelman",
+                     "Bayesian statistics",
+                     "Brian Nosek/Center for Open Science",
+                     "Economic cost",
+                     "Fraud",
+                     "Heterogeneity",
+                     "Incentives",
+                     #"John Ioannidis",
+                     "Legitimacy of science",
+                     "P values",
+                     "Peer review",
+                     "Pre-registration",
+                     "Publishing culture",
+                     "Reagents",
+                     "Sample size and power",
+                     "Transparency"))
+}
+
+df_bootstrap_partial_points_2 <- df_bootstrap_partial_points %>%
+  node_filter()
+df_bootstrap_hull_2 <- df_bootstrap_hull %>%
+  node_filter()
+df_bootstrap_nodes_2 <- df_bootstrap_nodes %>%
+  node_filter()
+
+ggplot(df_bootstrap_partial_points_2, aes(x=Dim.1, y=Dim.2, fill=Node))+
+  theme_bw()+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
+  geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
+  geom_point(aes(color=Node), size=0.5)+
+  geom_polygon(data = df_bootstrap_hull_2, alpha = 0.4)+
+  geom_point(data=filter(df_bootstrap_partial_points_2, Group == 1001), shape=17, size=3)+
+  geom_point(data = df_bootstrap_nodes_2, aes(x=Dim.1, y=Dim.2), shape=2, size=3)+
+  geom_text_repel(data=filter(df_bootstrap_partial_points_2, Group == 1001), aes(label=Node))
+
+
+##Momin's code
+df <- as.data.frame(df_coverage_2)
+rownames(df) <- df$Name
+df <- df[,-1]
+
+nboot <- 1000
+boot <- array(data = NA,
+              dim = c(nboot, 2, ncol(df)),
+              dimnames = list(bootiter = 1:nboot,
+                              coords = c("Dim 1", "Dim 2"),
+                              col = names(df)))
+errors <- rep(NA, nboot)
+for (i in 1:nboot) {
+  CA_boot <- CA(df[sample(x = 1:nrow(df),
+                          replace = T),],
+                ncp = 2,
+                graph = FALSE)
+  rotated <- vegan::procrustes(CA_result$col$coord[,1:2],
+                               CA_boot$col$coord[,1:2])
+  errors[i] <- rotated$ss
+  boot[i,,] <- t(fitted(rotated))
+  if (i%%100==0) {print(i)}
+}
+
+hist(errors, breaks = 500)
+hist(log(errors), breaks = 100)
+
+plot(CA_result$col$coord[,1:2], pch = 19, cex = .2,
+     ylim = c(-2, 3),
+     xlim = c(-3, 3))
+points(apply(boot, c(3,2), median), pch = 19, cex = .2, col = "lightgray") #calculates median coords for each node
+for (i in 1:ncol(df)) {
+  points <- boot[,,i] #extract first 1000 coords for node i
+  repeat { # http://carme-n.org/?sec=code2
+    hpts <- chull(points)
+    npts <- nrow(points[-hpts,]) #next number of points in peeled set
+    if(npts/nboot < 0.5) break #keep repeating until half of points have been removed
+    points <- points[-hpts,] #remove the hulled points
+  }
+  hpts <- c(hpts,hpts[1])
+  lines(points[hpts,], lty = 3)
+}
 
 
 # Figure 1 ----------------------------------------------------------------
