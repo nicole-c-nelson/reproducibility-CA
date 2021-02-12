@@ -10,6 +10,7 @@ library(knitr)
 library(waffle)
 library(moderndive)
 
+
 ###Read IRR and node summary files
 IRR_files <- dir_ls("Data/IRR files") #create list of all files in the IRR data folder
 summary_files <- dir_ls("Data/Node summary files 2020-05-21") #create list of all files in node summary data folder
