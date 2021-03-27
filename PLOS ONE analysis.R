@@ -281,7 +281,7 @@ repeat_bootstrap_MFA  <- function(df, n) {
 
 #Another way would be to run MFAs with larger numbers of bootstrap samples in them
 
-nrep <- 1000
+nrep <-  1000
 df_bootstrap_sample <- df_coverage_2 %>%
   rep_sample_n(size=353, replace=TRUE, reps = nrep)
 
