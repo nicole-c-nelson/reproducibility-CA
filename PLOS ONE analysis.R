@@ -347,27 +347,35 @@ df_bootstrap_hull <- df_bootstrap_partial_points %>%
 ggplot(df_bootstrap_partial_points, aes(x=Dim.1, y=Dim.2, fill=Node))+
   geom_point(aes(color=Node), size = 0.7)+
   geom_point(data=filter(df_bootstrap_partial_points, Group == (1001)), color="black", shape=17, size=3)+
-  geom_polygon(data = df_bootstrap_hull, alpha = 0.25)
+  geom_text_repel(data=filter(df_bootstrap_partial_points, Group == 1001), 
+                  aes(label=Node), point.padding = 0.25, box.padding = 0.5)+
+  geom_polygon(data = df_bootstrap_hull, alpha = 0.25)+
+  facet_wrap(~Node)
+  
 
 #plot a subset of the nodes
 
 node_filter <- function(df) {
   df %>%
-  filter(Node %in% c("Amgen or Bayer studies",
+  filter(Node %in% c(
+    #"Amgen or Bayer studies",
                      #"Andrew Gelman",
                      "Bayesian statistics",
                      "Brian Nosek/Center for Open Science",
-                     "Economic cost",
+                     #"Economic cost",
                      "Fraud",
                      "Heterogeneity",
+                     "Impact on policy or habits",
                      "Incentives",
                      #"John Ioannidis",
                      "Legitimacy of science",
+                     "Methods training",
                      "P values",
                      "Peer review",
                      "Pre-registration",
                      "Publishing culture",
                      "Reagents",
+                     "Retractions",
                      "Sample size and power",
                      "Transparency"))
 }
@@ -385,10 +393,12 @@ ggplot(df_bootstrap_partial_points_2, aes(x=Dim.1, y=Dim.2, fill=Node))+
   geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
   geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
   geom_point(aes(color=Node), size=0.5)+
-  geom_polygon(data = df_bootstrap_hull_2, alpha = 0.4)+
+  geom_polygon(data = df_bootstrap_hull_2, alpha = 0.70)+
   geom_point(data=filter(df_bootstrap_partial_points_2, Group == 1001), shape=17, size=3)+
   geom_point(data = df_bootstrap_nodes_2, aes(x=Dim.1, y=Dim.2), shape=2, size=3)+
-  geom_text_repel(data=filter(df_bootstrap_partial_points_2, Group == 1001), aes(label=Node))
+  geom_text_repel(data=filter(df_bootstrap_partial_points_2, Group == 1001), 
+                  aes(label=Node), point.padding = 0.25, box.padding = 0.5)+
+  theme(legend.position = "none")
 
 
 ##Momin's code
