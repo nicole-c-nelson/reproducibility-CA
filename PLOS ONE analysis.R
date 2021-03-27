@@ -399,9 +399,14 @@ ggplot(df_bootstrap_partial_points_2, aes(x=Dim.1, y=Dim.2, fill=Node))+
   scale_shape_manual(name = element_blank(), values = c(15,22)) +
   geom_line(data = rbind(df_bootstrap_partial_points_2 %>% filter(Group == 1001), df_bootstrap_nodes_2),  aes(group=Node), linetype=2, show.legend = F)+
   geom_text_repel(data=filter(df_bootstrap_partial_points_2, Group == 1001), aes(label=Node), show.legend = F)+
-  labs(x= "Dimension 1: 'Discipline' (8.38%)", y = "Dimension 2: 'Audience' (7.65%)")+
+  labs(x= "Dimension 1: ‘Discipline’ (8.38%)", y = "Dimension 2: ‘Audience’ (7.65%)")+
   theme(legend.position="bottom")
-  
+## exported as SVG with 650x650
+## manual edits in Inkscape
+## reduce alpha for bootstrap sample points to 70
+## remove connecting lines between bootstrap/sample points when they're touching
+## move labels and add label lines
+## change line type for connecting lines to finer dash
 
 ##Momin's code
 df <- as.data.frame(df_coverage_2)
