@@ -351,26 +351,20 @@ ggplot(df_bootstrap_partial_points, aes(x=Dim.1, y=Dim.2, fill=Node))+
                   aes(label=Node), point.padding = 0.25, box.padding = 0.5)+
   geom_polygon(data = df_bootstrap_hull, alpha = 0.25)+
   facet_wrap(~Node)
-  
+
 
 #plot a subset of the nodes
 
 node_filter <- function(df) {
   df %>%
-  filter(Node %in% c(#"Amgen or Bayer studies",
-                     #"Andrew Gelman",
-                     "Bayesian statistics",
+  filter(Node %in% c("Bayesian statistics",
                      "Brian Nosek/Center for Open Science",
-                     #"Economic cost",
                      "Fraud",
                      "Heterogeneity",
                      "Impact on policy or habits",
                      "Incentives",
-                     #"John Ioannidis",
                      "Legitimacy of science",
-                     #"Methods training",
                      "P values",
-                     #"Peer review",
                      "Pre-registration",
                      "Publishing culture",
                      "Reagents",
@@ -404,7 +398,9 @@ ggplot(df_bootstrap_partial_points_2, aes(x=Dim.1, y=Dim.2, fill=Node))+
   guides(fill = F) +
   scale_shape_manual(name = element_blank(), values = c(15,22)) +
   geom_line(data = rbind(df_bootstrap_partial_points_2 %>% filter(Group == 1001), df_bootstrap_nodes_2),  aes(group=Node), linetype=2, show.legend = F)+
-  geom_text_repel(data=filter(df_bootstrap_partial_points_2, Group == 1001), aes(label=Node), show.legend = F)
+  geom_text_repel(data=filter(df_bootstrap_partial_points_2, Group == 1001), aes(label=Node), show.legend = F)+
+  labs(x= "Dimension 1: 'Discipline' (8.38%)", y = "Dimension 2: 'Audience' (7.65%)")+
+  theme(legend.position="bottom")
   
 
 ##Momin's code
