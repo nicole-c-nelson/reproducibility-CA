@@ -386,7 +386,7 @@ df_original_bootstrap <- df_bootstrap_partial_points_2 %>%
   mutate(sample = "Original sample") %>% 
   rbind(df_bootstrap_nodes_2 %>% mutate(sample = "Bootstrap sample"))
 
-##Figure bootstrap---------------
+##Figure 5 bootstrap---------------
 ggplot(df_bootstrap_partial_points_2, aes(x=Dim.1, y=Dim.2, fill=Node))+
   theme_bw()+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
