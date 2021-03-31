@@ -282,7 +282,7 @@ repeat_bootstrap_MFA  <- function(df, n) {
 
 #Another way would be to run MFAs with larger numbers of bootstrap samples in them
 
-nrep <- 1000
+nrep <-  1000
 df_bootstrap_sample <- df_coverage_2 %>%
   rep_sample_n(size=353, replace=TRUE, reps = nrep)
 
@@ -344,31 +344,32 @@ df_bootstrap_hull <- df_bootstrap_partial_points %>%
   group_by(Node) %>% 
   group_modify(~ hull_peel(.x))
 
-#plot bootstrap samples and hulls
+#plot bootstrap samples and hulls individually
 ggplot(df_bootstrap_partial_points, aes(x=Dim.1, y=Dim.2, fill=Node))+
   geom_point(aes(color=Node), size = 0.7)+
   geom_point(data=filter(df_bootstrap_partial_points, Group == (1001)), color="black", shape=17, size=3)+
-  geom_polygon(data = df_bootstrap_hull, alpha = 0.25)
+  geom_text_repel(data=filter(df_bootstrap_partial_points, Group == 1001), 
+                  aes(label=Node), point.padding = 0.25, box.padding = 0.5)+
+  geom_polygon(data = df_bootstrap_hull, alpha = 0.25)+
+  facet_wrap(~Node)
+
 
 #plot a subset of the nodes
 
 node_filter <- function(df) {
   df %>%
-  filter(Node %in% c("Amgen or Bayer studies",
-                     #"Andrew Gelman",
-                     "Bayesian statistics",
+  filter(Node %in% c("Bayesian statistics",
                      "Brian Nosek/Center for Open Science",
-                     "Economic cost",
                      "Fraud",
                      "Heterogeneity",
+                     "Impact on policy or habits",
                      "Incentives",
-                     #"John Ioannidis",
                      "Legitimacy of science",
                      "P values",
-                     "Peer review",
                      "Pre-registration",
                      "Publishing culture",
                      "Reagents",
+                     "Retractions",
                      "Sample size and power",
                      "Transparency"))
 }
@@ -380,17 +381,33 @@ df_bootstrap_hull_2 <- df_bootstrap_hull %>%
 df_bootstrap_nodes_2 <- df_bootstrap_nodes %>%
   node_filter()
 
+#create data frame for original and bootstrap theme points
+df_original_bootstrap <- df_bootstrap_partial_points_2 %>% 
+  filter(Group == 1001) %>% 
+  mutate(sample = "Original sample") %>% 
+  rbind(df_bootstrap_nodes_2 %>% mutate(sample = "Bootstrap sample"))
+
+##Figure bootstrap---------------
 ggplot(df_bootstrap_partial_points_2, aes(x=Dim.1, y=Dim.2, fill=Node))+
   theme_bw()+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
   geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
   geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
-  geom_point(aes(color=Node), size=0.5)+
-  geom_polygon(data = df_bootstrap_hull_2, alpha = 0.4)+
-  geom_point(data=filter(df_bootstrap_partial_points_2, Group == 1001), shape=17, size=3)+
-  geom_point(data = df_bootstrap_nodes_2, aes(x=Dim.1, y=Dim.2), shape=2, size=3)+
-  geom_text_repel(data=filter(df_bootstrap_partial_points_2, Group == 1001), aes(label=Node))
-
+  #geom_point(aes(color=Node), size=0.5, show.legend = F)+
+  geom_polygon(data = df_bootstrap_hull_2, alpha = 0.4, show.legend = F)+
+  geom_point(data = df_original_bootstrap, aes(shape = sample), size = 3)+
+  guides(fill = F) +
+  scale_shape_manual(name = element_blank(), values = c(15,22)) +
+  geom_line(data = rbind(df_bootstrap_partial_points_2 %>% filter(Group == 1001), df_bootstrap_nodes_2),  aes(group=Node), linetype=2, show.legend = F)+
+  geom_text_repel(data=filter(df_bootstrap_partial_points_2, Group == 1001), aes(label=Node), show.legend = F)+
+  labs(x= "Dimension 1: ‘Discipline’ (8.38%)", y = "Dimension 2: ‘Audience’ (7.65%)")+
+  theme(legend.position="bottom")
+## exported as SVG with 650x650
+## manual edits in Inkscape
+## reduce alpha for bootstrap sample points to 70
+## remove connecting lines between bootstrap/sample points when they're touching
+## move labels and add label lines
+## change line type for connecting lines to finer dash
 
 ##Momin's code
 df <- as.data.frame(df_coverage_2)
