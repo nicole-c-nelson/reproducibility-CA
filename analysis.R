@@ -699,6 +699,128 @@ ellipseCA(CA_result, ellipse = c("col"), method = "multinomial", axes = c(1, 2))
 
 ###Code graveyard below! Stuff that I'm not using for now
 
+
+#I think this first way is not going to work because it just gives the coordinates for the supplementary individuals
+#It doesn't seem to produce coordinates for where the codes would be based on those supplementary individuals
+
+#df_bootstrap_sample <- df_coverage_2 %>%
+#rep_sample_n(size=353, replace=TRUE, reps = 100)
+
+#df_coverage_bootstrap <- df_bootstrap_sample %>%
+#filter(replicate==1) %>%
+#ungroup() %>%
+#select(-replicate) %>%
+#mutate(Name = paste0(runif(353), Name)) %>% 
+#bind_rows(., df_coverage_2, id=NULL) %>%
+#column_to_rownames(var = "Name")
+
+#CA_bootstrap_result <- CA(df_coverage_bootstrap,
+#row.sup = c(1:353),
+#graph = FALSE)
+
+# function to do a single bootstrap replicate of the MFA analysis
+# and return a dataframe with the nodes and the coordinates of the
+# two dimensions
+# takes the dataframe to be analyzed as its only input
+bootstrap_MFA <- function(df) {
+  
+  df_bootstrap_sample <- df %>%
+    rep_sample_n(size=353, replace=TRUE, reps = 1)
+  
+  df_coverage_bootstrap <- df_bootstrap_sample %>%
+    ungroup() %>%
+    select(-replicate) %>%
+    bind_rows(., df, id=NULL) %>%
+    bind_rows(., df, id=NULL) %>%
+    mutate(Name = paste0(Name, runif(1059))) %>% #random number added because otherwise Names aren't unique and can't be set to row names
+    column_to_rownames(var = "Name") #you have to do this for FactoMineR, but I always do this as the last step because tidyverse functions often erase the row names
+  
+  df_coverage_bootstrap_2 <- data.frame(t(df_coverage_bootstrap))
+  
+  MFA_bootstrap_result <- MFA(df_coverage_bootstrap_2,
+                              group=rep(nrow(df), 3),
+                              type=rep('f', 3),
+                              #num.group.sup=c(1),
+                              graph=FALSE)
+  
+  return(as.data.frame(MFA_bootstrap_result$separate.analyses$Gr1$ind$coord[,1:2]) %>% 
+           rownames_to_column(var = "node"))
+}
+
+bootstrap_MFA(df_coverage_2)
+
+#run bootstrap MFA n times and append results
+repeat_bootstrap_MFA  <- function(df, n) {
+  #set up empty results tibble
+  MFA_return <- data.frame(node = character(),
+                           Dim.1 = numeric(),
+                           Dim.2 = numeric(),
+                           replicate = numeric())
+  # run n loops of bootstrap MFA function and append results
+  for(i in 1:n){
+    MFA_result <- bootstrap_MFA(df)
+    MFA_result <- MFA_result %>% 
+      mutate(replicate = i) #add id column for the replicate
+    MFA_return <- bind_rows(MFA_return, MFA_result)
+  }
+  return(MFA_return)
+}
+
+
+#plot bootstrap samples and hulls individually
+ggplot(df_bootstrap_partial_points, aes(x=Dim.1, y=Dim.2, fill=Node))+
+  geom_point(aes(color=Node), size = 0.7)+
+  geom_point(data=filter(df_bootstrap_partial_points, Group == (1001)), color="black", shape=17, size=3)+
+  geom_text_repel(data=filter(df_bootstrap_partial_points, Group == 1001), 
+                  aes(label=Node), point.padding = 0.25, box.padding = 0.5)+
+  geom_polygon(data = df_bootstrap_hull, alpha = 0.25)+
+  facet_wrap(~Node)
+
+##Momin's code
+df <- as.data.frame(df_coverage_2)
+rownames(df) <- df$Name
+df <- df[,-1]
+
+nboot <- 1000
+boot <- array(data = NA,
+              dim = c(nboot, 2, ncol(df)),
+              dimnames = list(bootiter = 1:nboot,
+                              coords = c("Dim 1", "Dim 2"),
+                              col = names(df)))
+errors <- rep(NA, nboot)
+for (i in 1:nboot) {
+  CA_boot <- CA(df[sample(x = 1:nrow(df),
+                          replace = T),],
+                ncp = 2,
+                graph = FALSE)
+  rotated <- vegan::procrustes(CA_result$col$coord[,1:2],
+                               CA_boot$col$coord[,1:2])
+  errors[i] <- rotated$ss
+  boot[i,,] <- t(fitted(rotated))
+  if (i%%100==0) {print(i)}
+}
+
+hist(errors, breaks = 500)
+hist(log(errors), breaks = 100)
+
+plot(CA_result$col$coord[,1:2], pch = 19, cex = .2,
+     ylim = c(-2, 3),
+     xlim = c(-3, 3))
+points(apply(boot, c(3,2), median), pch = 19, cex = .2, col = "lightgray") #calculates median coords for each node
+for (i in 1:ncol(df)) {
+  points <- boot[,,i] #extract first 1000 coords for node i
+  repeat { # http://carme-n.org/?sec=code2
+    hpts <- chull(points)
+    npts <- nrow(points[-hpts,]) #next number of points in peeled set
+    if(npts/nboot < 0.5) break #keep repeating until half of points have been removed
+    points <- points[-hpts,] #remove the hulled points
+  }
+  hpts <- c(hpts,hpts[1])
+  lines(points[hpts,], lty = 3)
+}
+
+
+
 #Create count data frame
 df_count <- summary_files %>%
   map_dfr(read_xlsx, .id = "node") %>% #read in every file; add "node" variable based on file name

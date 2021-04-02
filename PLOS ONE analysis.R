@@ -192,11 +192,6 @@ CA_result <- CA(df_coverage_5, #perform CA
 #Create a description of the first three dimensions of the CA
 dimdesc_1_3 <- dimdesc(CA_result, axes = 1:3, proba = 0.05)
 
-#View tables of correlations of supplementary variables with Dim 1 and Dim 2
-view(dimdesc_1_3$`Dim 1`$quanti) 
-view(dimdesc_1_3$`Dim 1`$quali)
-view(dimdesc_1_3$`Dim 2`$quali)
-
 #Clustering 
 HCPC_result <- HCPC(CA_result, nb.clust=4, consol=TRUE, graph=FALSE) #perform clustering
 
@@ -213,116 +208,54 @@ MFA_auth_result <-MFA(df_coverage_sorted_by_auth_2,
 
 
 # Bootstrap analysis-------------------------------------------------------
+#Running this analysis will take a long time on most computers
+#If you want to un-comment this and try running the analysis yourself, I'd suggest running 100 reps
 
-#I think this first way is not going to work because it just gives the coordinates for the supplementary individuals
-#It doesn't seem to produce coordinates for where the codes would be based on those supplementary individuals
-
+#Create bootstrap samples
+#nrep <-  1000
 #df_bootstrap_sample <- df_coverage_2 %>%
-  #rep_sample_n(size=353, replace=TRUE, reps = 100)
+  #rep_sample_n(size=353, replace=TRUE, reps = nrep)
 
+#Clean up dataframe of bootstrap samples and add original sample
 #df_coverage_bootstrap <- df_bootstrap_sample %>%
-  #filter(replicate==1) %>%
   #ungroup() %>%
   #select(-replicate) %>%
-  #mutate(Name = paste0(runif(353), Name)) %>% 
   #bind_rows(., df_coverage_2, id=NULL) %>%
-  #column_to_rownames(var = "Name")
+  #mutate(Name = paste0(runif((nrep+1)*353), Name)) %>% #random number added because otherwise Names aren't unique and can't be set to row names
+  #column_to_rownames(var = "Name") 
 
-#CA_bootstrap_result <- CA(df_coverage_bootstrap,
-                          #row.sup = c(1:353),
-                          #graph = FALSE)
+#Transpose data frame so that the nodes are the individuals
+#df_coverage_bootstrap_2 <- data.frame(t(df_coverage_bootstrap))
 
-# function to do a single bootstrap replicate of the MFA analysis
-# and return a dataframe with the nodes and the coordinates of the
-# two dimensions
-# takes the dataframe to be analyzed as its only input
-bootstrap_MFA <- function(df) {
+#Perform MFA using FactoMineR
+#MFA_bootstrap_result <- MFA(df_coverage_bootstrap_2,
+                            #group=rep(353,(nrep+1)),
+                            #type=rep('f',(nrep+1)),
+                            #graph=FALSE)
 
-df_bootstrap_sample <- df %>%
-  rep_sample_n(size=353, replace=TRUE, reps = 1)
+#Extract node coordinates from MFA object
+#bootstrap_nodes_rownames <- rownames(MFA_bootstrap_result$ind$coord)
 
-df_coverage_bootstrap <- df_bootstrap_sample %>%
-  ungroup() %>%
-  select(-replicate) %>%
-  bind_rows(., df, id=NULL) %>%
-  bind_rows(., df, id=NULL) %>%
-  mutate(Name = paste0(Name, runif(1059))) %>% #random number added because otherwise Names aren't unique and can't be set to row names
-  column_to_rownames(var = "Name") #you have to do this for FactoMineR, but I always do this as the last step because tidyverse functions often erase the row names
-
-df_coverage_bootstrap_2 <- data.frame(t(df_coverage_bootstrap))
-
-MFA_bootstrap_result <- MFA(df_coverage_bootstrap_2,
-                         group=rep(nrow(df), 3),
-                         type=rep('f', 3),
-                         #num.group.sup=c(1),
-                         graph=FALSE)
-
-return(as.data.frame(MFA_bootstrap_result$separate.analyses$Gr1$ind$coord[,1:2]) %>% 
-  rownames_to_column(var = "node"))
-}
-
-bootstrap_MFA(df_coverage_2)
-
-#run bootstrap MFA n times and append results
-repeat_bootstrap_MFA  <- function(df, n) {
-  #set up empty results tibble
-  MFA_return <- data.frame(node = character(),
-                           Dim.1 = numeric(),
-                           Dim.2 = numeric(),
-                           replicate = numeric())
-  # run n loops of bootstrap MFA function and append results
-  for(i in 1:n){
-    MFA_result <- bootstrap_MFA(df)
-    MFA_result <- MFA_result %>% 
-      mutate(replicate = i) #add id column for the replicate
-    MFA_return <- bind_rows(MFA_return, MFA_result)
-  }
-  return(MFA_return)
-}
-
-#Another way would be to run MFAs with larger numbers of bootstrap samples in them
-
-nrep <-  1000
-df_bootstrap_sample <- df_coverage_2 %>%
-  rep_sample_n(size=353, replace=TRUE, reps = nrep)
-
-df_coverage_bootstrap <- df_bootstrap_sample %>%
-  ungroup() %>%
-  select(-replicate) %>%
-  bind_rows(., df_coverage_2, id=NULL) %>%
-  mutate(Name = paste0(runif((nrep+1)*353), Name)) %>% #random number added because otherwise Names aren't unique and can't be set to row names
-  column_to_rownames(var = "Name") 
-
-df_coverage_bootstrap_2 <- data.frame(t(df_coverage_bootstrap))
-
-MFA_bootstrap_result <- MFA(df_coverage_bootstrap_2,
-                            group=rep(353,(nrep+1)),
-                            type=rep('f',(nrep+1)),
-                            graph=FALSE)
-
-#extract node coordinates from MFA object
-bootstrap_nodes_rownames <- rownames(MFA_bootstrap_result$ind$coord)
-
-df_bootstrap_nodes <- as_tibble(MFA_bootstrap_result$ind$coord) %>%
-  `rownames<-`(bootstrap_nodes_rownames) %>%
-  rownames_to_column(var = "Name") %>%
-  mutate(Group = as.numeric(str_replace_all(Name, "[^0-9]", ""))) %>%
-  mutate(Node = str_remove(Name, "\\..*")) %>%
-  select(-Name) 
+#df_bootstrap_nodes <- as_tibble(MFA_bootstrap_result$ind$coord) %>%
+  #`rownames<-`(bootstrap_nodes_rownames) %>%
+  #rownames_to_column(var = "Name") %>%
+  #mutate(Group = as.numeric(str_replace_all(Name, "[^0-9]", ""))) %>%
+  #mutate(Node = str_remove(Name, "\\..*")) %>%
+  #select(-Name) 
 # saveRDS(df_bootstrap_nodes, file = "df_bootstrap_nodes_1000.RDS")
 
-#extract partial points from MFA object
-bootstrap_rownames <- rownames(MFA_bootstrap_result$ind$coord.partiel)
+#Extract partial points from MFA object
+#bootstrap_rownames <- rownames(MFA_bootstrap_result$ind$coord.partiel)
 
-df_bootstrap_partial_points <- as_tibble(MFA_bootstrap_result$ind$coord.partiel) %>%
-  `rownames<-`(bootstrap_rownames) %>%
-  rownames_to_column(var = "Name") %>%
-  mutate(Group = as.numeric(str_replace_all(Name, "[^0-9]", ""))) %>%
-  mutate(Node = str_remove(Name, "\\..*")) %>%
-  select(-Name) 
+#df_bootstrap_partial_points <- as_tibble(MFA_bootstrap_result$ind$coord.partiel) %>%
+  #`rownames<-`(bootstrap_rownames) %>%
+  #rownames_to_column(var = "Name") %>%
+  #mutate(Group = as.numeric(str_replace_all(Name, "[^0-9]", ""))) %>%
+  #mutate(Node = str_remove(Name, "\\..*")) %>%
+  #select(-Name) 
 # saveRDS(df_bootstrap_partial_points, file = "df_bootstrap_partial_points_1000.RDS")
 
-#read the RDS files
+#Read the RDS files containing data from the bootstrap analysis
 df_bootstrap_partial_points <- readRDS("df_bootstrap_partial_points_1000.RDS")
 df_bootstrap_nodes <- readRDS("df_bootstrap_nodes_1000.RDS")
 
@@ -344,116 +277,8 @@ df_bootstrap_hull <- df_bootstrap_partial_points %>%
   group_by(Node) %>% 
   group_modify(~ hull_peel(.x))
 
-#plot bootstrap samples and hulls individually
-ggplot(df_bootstrap_partial_points, aes(x=Dim.1, y=Dim.2, fill=Node))+
-  geom_point(aes(color=Node), size = 0.7)+
-  geom_point(data=filter(df_bootstrap_partial_points, Group == (1001)), color="black", shape=17, size=3)+
-  geom_text_repel(data=filter(df_bootstrap_partial_points, Group == 1001), 
-                  aes(label=Node), point.padding = 0.25, box.padding = 0.5)+
-  geom_polygon(data = df_bootstrap_hull, alpha = 0.25)+
-  facet_wrap(~Node)
 
-
-#plot a subset of the nodes
-
-node_filter <- function(df) {
-  df %>%
-  filter(Node %in% c("Bayesian statistics",
-                     "Brian Nosek/Center for Open Science",
-                     "Fraud",
-                     "Heterogeneity",
-                     "Impact on policy or habits",
-                     "Incentives",
-                     "Legitimacy of science",
-                     "P values",
-                     "Pre-registration",
-                     "Publishing culture",
-                     "Reagents",
-                     "Retractions",
-                     "Sample size and power",
-                     "Transparency"))
-}
-
-df_bootstrap_partial_points_2 <- df_bootstrap_partial_points %>%
-  node_filter()
-df_bootstrap_hull_2 <- df_bootstrap_hull %>%
-  node_filter()
-df_bootstrap_nodes_2 <- df_bootstrap_nodes %>%
-  node_filter()
-
-#create data frame for original and bootstrap theme points
-df_original_bootstrap <- df_bootstrap_partial_points_2 %>% 
-  filter(Group == 1001) %>% 
-  mutate(sample = "Original sample") %>% 
-  rbind(df_bootstrap_nodes_2 %>% mutate(sample = "Bootstrap sample"))
-
-##Figure bootstrap---------------
-ggplot(df_bootstrap_partial_points_2, aes(x=Dim.1, y=Dim.2, fill=Node))+
-  theme_bw()+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-  geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
-  geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
-  #geom_point(aes(color=Node), size=0.5, show.legend = F)+
-  geom_polygon(data = df_bootstrap_hull_2, alpha = 0.4, show.legend = F)+
-  geom_point(data = df_original_bootstrap, aes(shape = sample), size = 3)+
-  guides(fill = F) +
-  scale_shape_manual(name = element_blank(), values = c(15,22)) +
-  geom_line(data = rbind(df_bootstrap_partial_points_2 %>% filter(Group == 1001), df_bootstrap_nodes_2),  aes(group=Node), linetype=2, show.legend = F)+
-  geom_text_repel(data=filter(df_bootstrap_partial_points_2, Group == 1001), aes(label=Node), show.legend = F)+
-  labs(x= "Dimension 1: ‘Discipline’ (8.38%)", y = "Dimension 2: ‘Audience’ (7.65%)")+
-  theme(legend.position="bottom")
-## exported as SVG with 650x650
-## manual edits in Inkscape
-## reduce alpha for bootstrap sample points to 70
-## remove connecting lines between bootstrap/sample points when they're touching
-## move labels and add label lines
-## change line type for connecting lines to finer dash
-
-##Momin's code
-df <- as.data.frame(df_coverage_2)
-rownames(df) <- df$Name
-df <- df[,-1]
-
-nboot <- 1000
-boot <- array(data = NA,
-              dim = c(nboot, 2, ncol(df)),
-              dimnames = list(bootiter = 1:nboot,
-                              coords = c("Dim 1", "Dim 2"),
-                              col = names(df)))
-errors <- rep(NA, nboot)
-for (i in 1:nboot) {
-  CA_boot <- CA(df[sample(x = 1:nrow(df),
-                          replace = T),],
-                ncp = 2,
-                graph = FALSE)
-  rotated <- vegan::procrustes(CA_result$col$coord[,1:2],
-                               CA_boot$col$coord[,1:2])
-  errors[i] <- rotated$ss
-  boot[i,,] <- t(fitted(rotated))
-  if (i%%100==0) {print(i)}
-}
-
-hist(errors, breaks = 500)
-hist(log(errors), breaks = 100)
-
-plot(CA_result$col$coord[,1:2], pch = 19, cex = .2,
-     ylim = c(-2, 3),
-     xlim = c(-3, 3))
-points(apply(boot, c(3,2), median), pch = 19, cex = .2, col = "lightgray") #calculates median coords for each node
-for (i in 1:ncol(df)) {
-  points <- boot[,,i] #extract first 1000 coords for node i
-  repeat { # http://carme-n.org/?sec=code2
-    hpts <- chull(points)
-    npts <- nrow(points[-hpts,]) #next number of points in peeled set
-    if(npts/nboot < 0.5) break #keep repeating until half of points have been removed
-    points <- points[-hpts,] #remove the hulled points
-  }
-  hpts <- c(hpts,hpts[1])
-  lines(points[hpts,], lty = 3)
-}
-
-
-# Figure 1 ----------------------------------------------------------------
+# Figure 1 and 2 ----------------------------------------------------------------
 #Create data frames of article attributes
 df_article_attrib <- df_coverage_3 %>%
   mutate(Audience = str_remove(audience, "\\..*")) %>%
@@ -469,11 +294,8 @@ df_article_attrib_2 <- df_coverage_3 %>%
   group_by(Audience, author, year) %>%
   tally() 
 
-#Plot Fig 1a using ggplot
-
-
+#Plot Figure 1 using ggplot
 cols <- viridis(3)
-
 
 df_article_attrib_2 %>% 
   mutate(author = as.factor(author)) %>% 
@@ -497,7 +319,7 @@ df_article_attrib_2 %>%
 ## edited in Inkscape to add "a" label
 
 
-#Plot Fig 1b using ggplot
+#Plot Figure 2 using ggplot
 df_article_attrib_2 %>% 
   mutate(year = case_when(year < 2009 ~ "1996-2008",
                           T ~ year)) %>% 
@@ -512,7 +334,7 @@ df_article_attrib_2 %>%
         panel.grid.major.x = element_blank())
 
 
-# Figure 2 ----------------------------------------------------------------
+# Figure 3 and 4 ----------------------------------------------------------------
 #Extract data from the CA and clustering objects to use for ggplot
 article_coord_1 <- CA_result$row$coord[,1]
 article_coord_2 <- CA_result$row$coord[,2]
@@ -587,7 +409,7 @@ df_CA_quali_sup_var <- data_frame("Dim_1" = quali_sup_coord_1,
 df_CA_results_sup_var <- bind_rows(df_CA_quali_sup_var, df_CA_quant_sup_var)
 
 
-#Plot Fig 2a using ggplot
+#Plot Figure 3 using ggplot
 ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_2)) +
   theme_bw()+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
@@ -617,7 +439,7 @@ ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_2)) +
 # - moved labels to avoid overlap (keeping labels in the same quadrant as the corresponding data point)
 # - removed period in "Scientific.audience" and "Popular.Audience" labels
 
-#Plot Fig 2b using ggplot
+#Plot Figure 4 using ggplot
 ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_3))+
   theme_bw()+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
@@ -638,7 +460,64 @@ ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_3))+
 # manual edits in Inkscape:
 # - moved labels to avoid overlap (keeping labels in the same quadrant as the corresponding data point)
 
-# Figure 3 ----------------------------------------------------------------
+##Figure 5---------------
+#create a filter function to select a subset of nodes to plot
+node_filter <- function(df) {
+  df %>%
+    filter(Node %in% c("Bayesian statistics",
+                       "Brian Nosek/Center for Open Science",
+                       "Fraud",
+                       "Heterogeneity",
+                       "Impact on policy or habits",
+                       "Incentives",
+                       "Legitimacy of science",
+                       "P values",
+                       "Pre-registration",
+                       "Publishing culture",
+                       "Reagents",
+                       "Retractions",
+                       "Sample size and power",
+                       "Transparency"))
+}
+
+#Apply the node filter function to the bootstrap data frames
+df_bootstrap_partial_points_2 <- df_bootstrap_partial_points %>%
+  node_filter()
+df_bootstrap_hull_2 <- df_bootstrap_hull %>%
+  node_filter()
+df_bootstrap_nodes_2 <- df_bootstrap_nodes %>%
+  node_filter()
+
+#Create data frame that combines original and bootstrap node coordinates
+df_original_bootstrap <- df_bootstrap_partial_points_2 %>% 
+  filter(Group == 1001) %>% 
+  mutate(sample = "Original sample") %>% 
+  rbind(df_bootstrap_nodes_2 %>% mutate(sample = "Bootstrap sample"))
+
+#Plot Figure 5 using ggplot
+ggplot(df_bootstrap_partial_points_2, aes(x=Dim.1, y=Dim.2, fill=Node))+
+  theme_bw()+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
+  geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
+  #geom_point(aes(color=Node), size=0.5, show.legend = F)+
+  geom_polygon(data = df_bootstrap_hull_2, alpha = 0.4, show.legend = F)+
+  geom_point(data = df_original_bootstrap, aes(shape = sample), size = 3)+
+  guides(fill = F) +
+  scale_shape_manual(name = element_blank(), values = c(15,22)) +
+  geom_line(data = rbind(df_bootstrap_partial_points_2 %>% filter(Group == 1001), df_bootstrap_nodes_2),  aes(group=Node), linetype=2, show.legend = F)+
+  geom_text_repel(data=filter(df_bootstrap_partial_points_2, Group == 1001), aes(label=Node), show.legend = F)+
+  labs(x= "Dimension 1: ‘Discipline’ (8.38%)", y = "Dimension 2: ‘Audience’ (7.65%)")+
+  theme(legend.position="bottom")
+## exported as SVG with 650x650
+## manual edits in Inkscape
+## reduce alpha for bootstrap sample points to 70
+## remove connecting lines between bootstrap/sample points when they're touching
+## move labels and add label lines
+## change line type for connecting lines to finer dash
+
+
+# Figure 6 and 7 ----------------------------------------------------------------
 #Create data frames for MFA by author results
 df_MFA_auth_articles <- as.data.frame(MFA_auth_result$freq$coord) %>%
   rownames_to_column(var = "Name")
@@ -704,7 +583,7 @@ df_MFA_aud_nodes_3 <- inner_join(df_MFA_aud_nodes_2, df_MFA_aud_part_points, by 
   pivot_wider(names_from = Dim, values_from = Value)
 
 
-#Plot Fig 3a using ggplot
+#Plot Figure 6 using ggplot
 ggplot(df_MFA_auth_nodes_3, aes(Dim.1, Dim.2))+
   theme_bw()+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
@@ -728,7 +607,7 @@ ggplot(df_MFA_auth_nodes_3, aes(Dim.1, Dim.2))+
        x="Dimension 1 (8.72%)", y="Dimension 2 (7.79%)")+
   theme(legend.position = "bottom")
   
-#Plot Fig 3b using ggplot
+#Plot Figure 7 using ggplot
 ggplot(df_MFA_aud_nodes_3, aes(Dim.1, Dim.2))+
   theme_bw()+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
@@ -755,6 +634,24 @@ ggplot(df_MFA_aud_nodes_3, aes(Dim.1, Dim.2))+
 
 # Supplementary figures and tables ----------------------------------------
 #Supplementary table 1
+df_IRR %>%
+  filter(!grepl("Overall", Name)) %>% 
+  arrange(desc(Ave_Kappa)) %>% 
+  kable(format = "latex", 
+        col.names = c("Theme", "JC--NCN", "KI--JC", "KI--NCN", "Average Kappa"),
+        booktabs = T, 
+        longtable = T,
+        digits = 2)
+  
+#Bonus visualization for S1 Table
+#plot the histogram of S1 Table so you can see the distribution of average Kappa scores  
+#not included in paper
+df_IRR %>%
+  filter(!grepl("Overall", Name)) %>%
+  ggplot(aes(x=Ave_Kappa))+
+    geom_histogram(binwidth = 0.05)
+
+#Supplementary table 2
 df_coverage_2 %>% 
   rowwise() %>% 
   mutate(total = sum(c_across(where(is.numeric)))) %>% #new variable for the total amount of text coded in each article
@@ -772,36 +669,15 @@ df_coverage_2 %>%
         longtable = T,
         digits = 2) #output as LaTeX table code
 
-#Supplementary table 2
-df_IRR %>%
-  filter(!grepl("Overall", Name)) %>% 
-  arrange(desc(Ave_Kappa)) %>% 
-  kable(format = "latex", 
-        col.names = c("Theme", "JC--NCN", "KI--JC", "KI--NCN", "Average Kappa"),
-        booktabs = T, 
-        longtable = T,
-        digits = 2)
-  
-#Bonus visualization: plot the histogram of this table so you can see the distribution of average Kappa scores  
-#not included in paper
-df_IRR %>%
-  filter(!grepl("Overall", Name)) %>%
-  ggplot(aes(x=Ave_Kappa))+
-    geom_histogram(binwidth = 0.05)
-
-
-
-
-
 #Bonus figure 
+#plot the scree plot for the correspondence analysis
 #not included in paper
 fviz_screeplot(CA_result)+
   geom_hline(yintercept=(1/(29-1)*100),linetype=2, color="red") +
   theme_minimal()
 
-
 #Bonus figure 
+#plot the loss of between-class inertia for the hierarchical clustering
 #not included in paper
 plot(HCPC_result, choice="bar")
 
-  
