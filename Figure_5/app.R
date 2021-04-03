@@ -64,32 +64,56 @@ NodeListInit <- df_bootstrap_partial_points %>%
     pull()
 
 # Define UI for application that draws a histogram
-ui <- fluidPage(
+ui <- navbarPage("Nelson et al",
+                 tabPanel("Figure 5",
+                          fluidPage(
+                              
+                              # Application title
+                              titlePanel("Old Faithful Geyser Data"),
+                              
+                              # Sidebar with a slider input for number of bins 
+                              sidebarLayout(
+                                  
+                                  
+                                  # Show a plot of the generated distribution
+                                  mainPanel(
+                                      plotOutput("distPlot"),
+                                  ),
+                                  sidebarPanel(
+                                      checkboxGroupInput("nodeSelect",
+                                                         "Choose which nodes you want to display",
+                                                         choices = NodeList,
+                                                         selected = NodeListInit),
+                                      checkboxInput("axesToggle",
+                                                    "Keep plot axes fixed?",
+                                                    FALSE)
+                                  )
+                              )
+                          )),
+                 tabPanel("Figure 2",
+                          (fluidPage(
+                              titlePanel("Correspondence analysis"),
+                              sidebarLayout(
+                                  mainPanel(
+                                      plotOutput("plot1", height = 350,
+                                                 click = "plot_click"
+                                      ),
+                                      p("Click on any nodes or article points in the plot to get more information about them.")
+                                  ),
+                                  sidebarPanel(
+                                      h3("Node Information"),
+                                      verbatimTextOutput("node_info"),
+                                      h3("Article information"),
+                                      verbatimTextOutput("article_info")
+                                  )
+                              )
+                            )
+                           )
+                     
+                 )
+            )
 
-    # Application title
-    titlePanel("Old Faithful Geyser Data"),
 
-    # Sidebar with a slider input for number of bins 
-    sidebarLayout(
-        
-
-        # Show a plot of the generated distribution
-        mainPanel(
-           plotOutput("distPlot"),
-        ),
-        sidebarPanel(
-            checkboxGroupInput("nodeSelect",
-                               "Choose which nodes you want to display",
-                               choices = NodeList,
-                               selected = NodeListInit),
-            checkboxInput("axesToggle",
-                          "Keep plot axes fixed?",
-                          FALSE)
-        )
-    )
-)
-
-# Define server logic required to draw a histogram
 server <- function(input, output) {
 
     output$distPlot <- renderPlot({
