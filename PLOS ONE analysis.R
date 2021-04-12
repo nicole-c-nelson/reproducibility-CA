@@ -9,7 +9,7 @@ library(factoextra)
 library(knitr)
 library(waffle)
 library(moderndive)
-library(vegan)
+library(psychometric)
 
 
 ###Read IRR and node summary files
@@ -209,7 +209,7 @@ MFA_auth_result <-MFA(df_coverage_sorted_by_auth_2,
 
 # Bootstrap analysis-------------------------------------------------------
 #Running this analysis will take a long time on most computers
-#If you want to un-comment this and try running the analysis yourself, I'd suggest running 100 reps
+#If you want to un-comment this and try running it to see how it works, I'd suggest running 100 reps
 
 #Create bootstrap samples
 #nrep <-  1000
@@ -408,6 +408,17 @@ df_CA_quali_sup_var <- data_frame("Dim_1" = quali_sup_coord_1,
 
 df_CA_results_sup_var <- bind_rows(df_CA_quali_sup_var, df_CA_quant_sup_var)
 
+#Calculate confidence intervals for word frequency and metadata variable correlations
+#NIH
+CIr(-0.2887331, 353, level = 0.95)
+#Psychology
+CIr(0.2547467, 353, level = 0.95)
+#QRP
+CIr(0.1123633, 353, level=0.95)
+#Audience
+CI.Rsq(0.11295806, 353, 2, level = 0.95)
+#Term
+CI.Rsq(0.14089800, 353, 3, level = 0.95)
 
 #Plot Figure 3 using ggplot
 ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_2)) +
