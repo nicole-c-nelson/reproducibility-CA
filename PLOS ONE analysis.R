@@ -20,7 +20,7 @@ summary_files <- dir_ls("Data/Node summary files 2020-05-21") #create list of al
 # Create IRR data frame ---------------------------------------------------
 df_IRR <- IRR_files %>%
   map_dfr(read_csv, .id = "rater") %>% #read in every file; add "rater" variable based on file name
-  select(Name, rater, Kappa) %>% #select three relevant variables
+  dplyr::select(Name, rater, Kappa) %>% #select three relevant variables
   mutate(rater = str_sub(rater, start = 16, end = -15)) %>% #fix name of "rater"
   filter(!grepl(":", Name)) %>% #remove IRR scores for individual articles, leaving only node summary scores
   pivot_wider(names_from = "rater", values_from = "Kappa") %>% #switch to wide data format
@@ -77,14 +77,14 @@ df_metadata_2 <- df_metadata %>%
   pivot_longer(cols = matches("[[:digit:]]{4}"), #pivot columns with year
                names_to = "year") %>% #into a new "year" column
   drop_na(value) %>% #drop rows that have a value of NA
-  select(-value) #drop value column
+  dplyr::select(-value) #drop value column
 
 #create variable for audience
 df_metadata_3 <-  df_metadata_2 %>% 
   pivot_longer(2:3) %>% #pivot the two audience variables
   mutate(value = replace(name, value == 0, NA)) %>% #replace cells that have 0 with NA
   drop_na(value) %>%
-  select(-value) %>% 
+  dplyr::select(-value) %>% 
   rename(audience = name)
 
 #create variable for author
@@ -92,7 +92,7 @@ df_metadata_4 <- df_metadata_3 %>%
   pivot_longer(2:4) %>% 
   mutate(value = replace(name, value == 0, NA)) %>% #replace cells that have 0 with NA
   drop_na(value) %>%
-  select(-value) %>% 
+  dplyr::select(-value) %>% 
   rename(author = name)
 
 #create variable for term
@@ -100,7 +100,7 @@ df_metadata_5 <- df_metadata_4 %>%
   pivot_longer(2:46) %>% 
   mutate(value = replace(name, value == 0, NA)) %>% #replace cells that have 0 with NA
   drop_na(value) %>%
-  select(-value) %>% 
+  dplyr::select(-value) %>% 
   rename(term = name)
 
 #create variable for reproducibility/replication
@@ -118,14 +118,14 @@ df_metadata_6 <- df_metadata_5 %>%
 #check for articles that have missing metadata
 df_metadata_2 %>% 
   anti_join(df_metadata_6, by = "Name") %>% 
-  select(Name)
+  dplyr::select(Name)
 
 
 
 # Create coverage data frame ----------------------------------------------
 df_coverage <- summary_files %>%
   map_dfr(read_xlsx, .id = "node") %>% #read in every file; add "node" variable based on file name
-  select(node, Name, Coverage) %>% #select 3 relevant variables
+  dplyr::select(node, Name, Coverage) %>% #select 3 relevant variables
   mutate(node = str_sub(node, start = 36, end = -6)) %>% #fix name of nodes
   mutate(Name = str_replace_all(Name, "[^a-zA-Z0-9]", "")) %>% #remove special characters, which cause errors in some people's systems
   pivot_wider(names_from = "node", values_from = "Coverage", values_fill = list(Coverage = 0)) %>% #switch to wide data format; fill empty cells with 0
@@ -141,22 +141,22 @@ df_coverage <- summary_files %>%
 
 #Create a data frame of nodes reaching the IRR threshold
 df_IRR_2 <- df_IRR %>%
-  select(Name, Ave_Kappa) %>% #select node name and average kappa score
+  dplyr::select(Name, Ave_Kappa) %>% #select node name and average kappa score
   filter(Ave_Kappa >= 0.60) %>% #select all nodes with an average Kappa of greater than 0.60
   pivot_wider(names_from = Name, values_from = Ave_Kappa) %>% #pivot so that node names become the variables rather than the rows
-  select(-starts_with("Overall")) %>% #get rid of overall average Kappa score as a variable
+  dplyr::select(-starts_with("Overall")) %>% #get rid of overall average Kappa score as a variable
   mutate(Name = NA)  #add a blank column to this data frame to match up with the "Name" variable in the count and coverage data frames
 
 #Use this IRR threshold data frame to filter the coverage data frame
 df_coverage_2 <- df_coverage %>%
-  select(colnames(df_IRR_2)) %>% #select nodes matching those in the IRR threshold data frame
-  select(Name, everything()) 
+  dplyr::select(colnames(df_IRR_2)) %>% #select nodes matching those in the IRR threshold data frame
+  dplyr::select(Name, everything()) 
 
 #join metadata to coverage dataframe
 df_coverage_3 <- inner_join(df_coverage_2, df_metadata_6, by = "Name")
 
 #join auto-coded nodes to coverage dataframe
-df_auto_code <-select(df_coverage, Name, contains("(auto)"))
+df_auto_code <-dplyr::select(df_coverage, Name, contains("(auto)"))
 df_coverage_4 <-inner_join(df_coverage_3, df_auto_code, by = "Name")
 
 #set article names to row names for FactomineR analysis
@@ -167,14 +167,14 @@ df_coverage_5 <- df_coverage_4 %>%
 # Create data frames for MFA ----------------------------------------------
 df_coverage_sorted_by_auth <- df_coverage_3 %>%
   arrange(author) %>%
-  select(-c(31:34)) %>%
+  dplyr::select(-c(31:34)) %>%
   column_to_rownames(var = "Name")
 
 df_coverage_sorted_by_auth_2 <- data.frame(t(df_coverage_sorted_by_auth))
 
 df_coverage_sorted_by_aud <- df_coverage_3 %>%
   arrange(audience) %>%
-  select(-c(31:34)) %>%
+  dplyr::select(-c(31:34)) %>%
   column_to_rownames(var = "Name")
 
 df_coverage_sorted_by_aud_2 <- data.frame(t(df_coverage_sorted_by_aud))
@@ -219,7 +219,7 @@ MFA_auth_result <-MFA(df_coverage_sorted_by_auth_2,
 #Clean up dataframe of bootstrap samples and add original sample
 #df_coverage_bootstrap <- df_bootstrap_sample %>%
   #ungroup() %>%
-  #select(-replicate) %>%
+  #dplyr::select(-replicate) %>%
   #bind_rows(., df_coverage_2, id=NULL) %>%
   #mutate(Name = paste0(runif((nrep+1)*353), Name)) %>% #random number added because otherwise Names aren't unique and can't be set to row names
   #column_to_rownames(var = "Name") 
@@ -241,7 +241,7 @@ MFA_auth_result <-MFA(df_coverage_sorted_by_auth_2,
   #rownames_to_column(var = "Name") %>%
   #mutate(Group = as.numeric(str_replace_all(Name, "[^0-9]", ""))) %>%
   #mutate(Node = str_remove(Name, "\\..*")) %>%
-  #select(-Name) 
+  #dplyr::select(-Name) 
 # saveRDS(df_bootstrap_nodes, file = "df_bootstrap_nodes_1000.RDS")
 
 #Extract partial points from MFA object
@@ -252,7 +252,7 @@ MFA_auth_result <-MFA(df_coverage_sorted_by_auth_2,
   #rownames_to_column(var = "Name") %>%
   #mutate(Group = as.numeric(str_replace_all(Name, "[^0-9]", ""))) %>%
   #mutate(Node = str_remove(Name, "\\..*")) %>%
-  #select(-Name) 
+  #dplyr::select(-Name) 
 # saveRDS(df_bootstrap_partial_points, file = "df_bootstrap_partial_points_1000.RDS")
 
 #Read the RDS files containing data from the bootstrap analysis
@@ -386,7 +386,7 @@ HCPC_labels <- rownames(HCPC_result$data.clust)
 df_HCPC_clusters <- as_tibble(HCPC_result$data.clust) %>%
   `rownames<-`(HCPC_labels) %>%
   rownames_to_column(var = "Name") %>%
-  select(Name, clust) 
+  dplyr::select(Name, clust) 
 
 df_CA_results_articles <- inner_join(df_CA_article_coord, df_metadata_6, by = "Name")
 df_CA_results_articles_2 <- inner_join(df_CA_results_articles, df_HCPC_clusters, by = "Name")
@@ -443,8 +443,8 @@ ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_2)) +
   geom_text_repel(data = subset(df_CA_results_nodes, Contrib_1_2 > 4), 
                   aes(label = Node), point.padding = 0.25, box.padding = 0.75)+
   labs(size="Contribution",color="Terms",
-       x="Dimension 1: Bench vs. statistical methods (8.50%)", 
-       y="Dimension 2: Social vs. technical issues (7.73%)")+
+       x="Dim 1: Bench vs. statistical methods (8.50%)", 
+       y="Dim 2: Social vs. technical issues (7.73%)")+
   theme(legend.position = "bottom")
 # file saved as SVG with 650x650 pixels
 # manual edits in Inkscape:
@@ -466,8 +466,8 @@ ggplot(df_CA_results_articles_2, aes(Dim_1,Dim_3))+
   geom_text_repel(data = subset(df_CA_results_nodes, Contrib_1_3 > 1.9), 
                   aes(label = Node), point.padding = 0.25, box.padding = 0.5)+
   labs(size="Contribution", color="Cluster",
-       x="Dimension 1: Bench vs. statistical methods (8.50%)", 
-       y="Dimension 3: Variation vs. standardization (6.95%)")+
+       x="Dim 1: Bench vs. statistical methods (8.50%)", 
+       y="Dim 3: Variation vs. standardization (6.95%)")+
   theme(legend.position = "bottom")
 # file saved as SVG with 650x650 pixels
 # manual edits in Inkscape:
@@ -520,7 +520,8 @@ ggplot(df_bootstrap_partial_points_2, aes(x=Dim.1, y=Dim.2, fill=Node))+
   scale_shape_manual(name = element_blank(), values = c(15,22)) +
   geom_line(data = rbind(df_bootstrap_partial_points_2 %>% filter(Group == 1001), df_bootstrap_nodes_2),  aes(group=Node), linetype=2, show.legend = F)+
   geom_text_repel(data=filter(df_bootstrap_partial_points_2, Group == 1001), aes(label=Node), show.legend = F)+
-  labs(x= "Dimension 1: ‘Discipline’ (8.38%)", y = "Dimension 2: ‘Audience’ (7.65%)")+
+  labs(x= "Dim 1: Bench vs. statistical methods (8.38%)", 
+       y = "Dim 2: Social vs. technical issues (7.65%)")+
   theme(legend.position="bottom")
 ## exported as SVG with 650x650
 ## manual edits in Inkscape
@@ -538,7 +539,7 @@ df_MFA_auth_articles <- as.data.frame(MFA_auth_result$freq$coord) %>%
 df_MFA_auth_within_inertia <- as.data.frame(MFA_auth_result$ind$within.inertia)%>%
   rownames_to_column(var = "Node") %>%
   mutate(Within_inert_1_2 = Dim.1 + Dim.2) %>%
-  select(Node, Within_inert_1_2)
+  dplyr::select(Node, Within_inert_1_2)
 
 df_MFA_auth_nodes <- as.data.frame(MFA_auth_result$ind$coord)%>%
   rownames_to_column(var = "Node")
@@ -548,7 +549,7 @@ df_MFA_auth_part_points <- as.data.frame(MFA_auth_result$ind$coord.partiel)%>%
   mutate(Author = Node) %>%
   mutate(Node = str_remove(Node, "\\..*")) %>% 
   mutate(Author = str_remove(Author, "^.*\\.")) %>%
-  select(Node, Author, Dim.1, Dim.2) %>%
+  dplyr::select(Node, Author, Dim.1, Dim.2) %>%
   pivot_wider(names_from = Author, values_from = c(Dim.1, Dim.2))
 
 df_MFA_auth_nodes_2 <- inner_join(df_MFA_auth_within_inertia, df_MFA_auth_nodes, by = "Node")
@@ -556,7 +557,7 @@ df_MFA_auth_nodes_2 <- inner_join(df_MFA_auth_within_inertia, df_MFA_auth_nodes,
 df_MFA_auth_nodes_3 <- inner_join(df_MFA_auth_nodes_2, df_MFA_auth_part_points, by = "Node") %>%
   rename(Dim.1_Mean = Dim.1) %>%
   rename(Dim.2_Mean = Dim.2) %>%
-  select(-c(Dim.3, Dim.4, Dim.5)) %>%
+  dplyr::select(-c(Dim.3, Dim.4, Dim.5)) %>%
   pivot_longer(-c(Node, Within_inert_1_2), 
                names_to = c("Dim", "Point_type"),
                names_pattern = "(.*)_(.*)",
@@ -570,7 +571,7 @@ df_MFA_aud_articles <- as.data.frame(MFA_aud_result$freq$coord) %>%
 df_MFA_aud_within_inertia <- as.data.frame(MFA_aud_result$ind$within.inertia)%>%
   rownames_to_column(var = "Node") %>%
   mutate(Within_inert_1_2 = Dim.1 + Dim.2) %>%
-  select(Node, Within_inert_1_2)
+  dplyr::select(Node, Within_inert_1_2)
 
 df_MFA_aud_nodes <- as.data.frame(MFA_aud_result$ind$coord)%>%
   rownames_to_column(var = "Node")
@@ -580,7 +581,7 @@ df_MFA_aud_part_points <- as.data.frame(MFA_aud_result$ind$coord.partiel)%>%
   mutate(Author = Node) %>%
   mutate(Node = str_remove(Node, "\\..*")) %>% 
   mutate(Author = str_remove(Author, "^.*\\.")) %>%
-  select(Node, Author, Dim.1, Dim.2) %>%
+  dplyr::select(Node, Author, Dim.1, Dim.2) %>%
   pivot_wider(names_from = Author, values_from = c(Dim.1, Dim.2))
 
 df_MFA_aud_nodes_2 <- inner_join(df_MFA_aud_within_inertia, df_MFA_aud_nodes, by = "Node")
@@ -588,7 +589,7 @@ df_MFA_aud_nodes_2 <- inner_join(df_MFA_aud_within_inertia, df_MFA_aud_nodes, by
 df_MFA_aud_nodes_3 <- inner_join(df_MFA_aud_nodes_2, df_MFA_aud_part_points, by = "Node") %>%
   rename(Dim.1_Mean = Dim.1) %>%
   rename(Dim.2_Mean = Dim.2) %>%
-  select(-c(Dim.3, Dim.4, Dim.5)) %>%
+  dplyr::select(-c(Dim.3, Dim.4, Dim.5)) %>%
   pivot_longer(-c(Node, Within_inert_1_2), 
                names_to = c("Dim", "Point_type"),
                names_pattern = "(.*)_(.*)",
@@ -617,8 +618,8 @@ ggplot(df_MFA_auth_nodes_3, aes(Dim.1, Dim.2))+
   geom_text_repel(data = subset(df_MFA_auth_nodes_3, Point_type=="Mean" & Within_inert_1_2 > 4),
                   aes(label=Node), point.padding = 0.25, box.padding = 0.5)+
   labs(size="Within-theme inertia", color="Group",
-       x="Dimension 1: Bench vs. statistical methods (8.72%)", 
-       y="Dimension 2: Social vs. technical issues (7.79%)")+
+       x="Dim 1: Bench vs. statistical methods (8.72%)", 
+       y="Dim 2: Social vs. technical issues (7.79%)")+
   theme(legend.position = "bottom")
   
 #Plot Figure 7 using ggplot
@@ -642,7 +643,8 @@ ggplot(df_MFA_aud_nodes_3, aes(Dim.1, Dim.2))+
   geom_text_repel(data = subset(df_MFA_aud_nodes_3, Point_type=="Mean" & Within_inert_1_2 > 9),
                   aes(label=Node), point.padding = 0.25, box.padding = 0.5)+
   labs(size="Within-theme inertia", color="Group",
-       x="Dimension 1 (8.11%)", y="Dimension 2 (6.53%)")+
+       x="Dim 1: All other issues vs. statistical issues (8.11%)", 
+       y="Dim 2: Reagents and rot vs. heterogeneity (6.53%)")+
   theme(legend.position = "bottom")
 
 
@@ -675,7 +677,7 @@ df_coverage_2 %>%
   group_by(code) %>% 
   summarize(Percent_mean_article = mean(coverage)*100) %>% #compute mean for each theme
   inner_join(df_CA_results_nodes, by = c("code" = "Node")) %>%
-  select(code, Percent_mean_article, Dim_1, Dim_2, Contrib_1_2, Cos2_1_2) %>% #Join to coordinates, contribution, and Cos2 info from the CA
+  dplyr::select(code, Percent_mean_article, Dim_1, Dim_2, Contrib_1_2, Cos2_1_2) %>% #Join to coordinates, contribution, and Cos2 info from the CA
   arrange(desc(Percent_mean_article)) %>% 
   kable(format = "latex", 
         col.names = c("Theme", "% mean article", "Dim. 1", "Dim. 2", "Contribution", "cos^2"),
