@@ -1,0 +1,1400 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{scrartcl}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+  \usepackage{amssymb}
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={S1 Appendix: Code Book for Reproducibility Dataset},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifluatex
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+
+\title{S1 Appendix: Code Book for Reproducibility Dataset}
+\author{}
+\date{\vspace{-2.5em}}
+
+\begin{document}
+\maketitle
+
+This appendix provides definitions, examples, and inclusion/exclusion
+rules for the thematic codes and metadata classifications applied to the
+articles.
+
+Five codes were modified after all articles had been coded because low
+Kappa scores indicated poor inter-rater reliability on those codes.
+
+\begin{itemize}
+\item
+  ``Fraud is a problem'' and ``Fraud is not a problem'' were merged into
+  a single code, ``Fraud,'' because of the difficulty of reliably
+  distinguishing between passages that treated fraud as a significant
+  contributor to irreproducibility and those that treated fraud as rare.
+\item
+  ``Heterogeneity/generalizability of populations/samples'' and
+  ``Intrinsic complexity'' were merged into a single code,
+  ``Heterogeneity,'' because of overlapping content between these two
+  codes.
+\item
+  ``Reagents and technologies'' was narrowed to ``Reagents'' by
+  reviewing all passages coded with this label and un-coding those which
+  did not mention reagents, because of the difficulty of reliably
+  identifying what counted as a technology under this definition.
+\end{itemize}
+
+\hypertarget{metadata}{%
+\subsubsection{Metadata}\label{metadata}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{Authors}
+
+  \begin{enumerate}
+
+  \item
+    Journalist (count authors as ``journalist'' if that is their primary
+    job, even if they have MDs or scientific training, e.g. Ivan
+    Oransky).
+  \item
+    Scientist (count authors as ``scientist'' if they are in
+    policy/administrative positions related to academic or industry
+    science and have scientific backgrounds, e.g.~NIH leadership).
+  \item
+    Other (e.g.~member of the general public writing an opinion letter,
+    head of a policy think tank).
+  \end{enumerate}
+\item
+  \textbf{Date}
+
+  \begin{enumerate}
+
+  \tightlist
+  \item
+    Month/year
+  \end{enumerate}
+\item
+  \textbf{Audience}
+
+  \begin{enumerate}
+
+  \item
+    Scientific (code as ``scientific'' if it is a news piece appearing
+    in a professional society website/magazine, such as \emph{Science,
+    Chemical \& Engineering News)}
+  \item
+    Popular (code as ``popular'' if the article is in a university
+    newspaper or something for more general audiences like \emph{STAT
+    News} or \emph{Scientific American)}
+  \end{enumerate}
+\item
+  \textbf{What are the preferred terms that the article uses?}
+
+  \begin{enumerate}
+
+  \tightlist
+  \item
+    If the article uses several terms in roughly equal measure (e.g.
+    uses both ``reproducibility'' and ``replication''), code as ``mixed
+    terms''
+  \end{enumerate}
+\end{enumerate}
+
+\hypertarget{stakes-of-the-crisis}{%
+\subsubsection{Stakes of the crisis}\label{stakes-of-the-crisis}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{Career costs to scientists}
+
+  \begin{enumerate}
+
+  \item
+    Irreproducibility will lead to scientists wasting time chasing down
+    false leads, discourage younger generations from going into science,
+    and damage the reputations of either the original study authors or
+    the replicators. Particular scientists' careers will be damaged if
+    they spend energy doing good, reproducible science while others do
+    not.
+  \item
+    Ex.~Allow scientists to publicly own up to mistakes without damage
+    to their careers (double code with \textbf{``Incentives''})
+  \item
+    Ex.~Performing replications (that fail) of famous experiments will
+    draw interpersonal ire from established scientists (replication
+    bullying).
+  \item
+    \emph{Code only for} \textbf{``Incentives''} \emph{if it's just
+    about the time costs of reproducible, transparent science. But code
+    also for \textbf{``Career Costs''} if the account is drawn
+    specifically in terms of people, like ``specific scientists will get
+    behind in their career if they spend all this time trying to
+    document their lab practices and replicate before publishing.''}
+  \end{enumerate}
+\item
+  \textbf{Economic cost of irreproducible science}
+
+  \begin{enumerate}
+
+  \tightlist
+  \item
+    Irreproducibility wastes money, especially taxpayer money.
+    Discussing the cost borne by pharmaceutical companies doing
+    follow-up work on irreproducible results.
+  \end{enumerate}
+\item
+  \textbf{Epistemology}
+
+  \begin{enumerate}
+
+  \item
+    The idea of truth itself or the scientific method is at stake,
+    independent of its effects on policy, economics, or translational
+    benefit.
+  \item
+    Ex.~Irreproducibility is an important component of the workings of
+    science, and is necessary to get at the ultimate truth.
+  \item
+    Ex.~Irreproducibility means we are not doing proper or valid
+    science; it hurts our understanding of what is ``true.''
+  \item
+    Ex.~The scientific method itself is broken.
+  \item
+    Ex.~We need to preserve the integrity of good science and
+    `depoliticize' science to produce much more objective, reliable
+    research. (might be double coded with \textbf{``Legitimacy of
+    Science''})
+  \end{enumerate}
+\item
+  \textbf{Impact on medicine}
+
+  \begin{enumerate}
+
+  \tightlist
+  \item
+    Irreproducibility may harm patients, slow progress towards
+    developing new treatments for patients, or subject patients to
+    substandard treatments. Include discussions of negative impact on
+    the pharmaceutical industry under this code (double code with
+    \textbf{``Economic cost''} if waste of pharma money is mentioned).
+  \end{enumerate}
+\item
+  \textbf{Impact of bad science on public policy/everyday habits}
+
+  \begin{enumerate}
+
+  \item
+    Irreproducible science will lead to the creation of bad policy, or
+    will lead people to modify their lives/everyday habits in ways that
+    they think are supported by science but are not.
+  \item
+    Ex.~Reinhart and Rogoff 2010 economics article influencing
+    politicians in UK and US for austerity policies (refuted by Thomas
+    Herndon).
+  \item
+    Ex.~government actors are building climate change policy on bad,
+    irreproducible science
+  \item
+    Ex.~impact of irreproducible science on legal case decisions or
+    government regulations
+  \item
+    Ex.~Individuals spend time ``power posing'' believing that it will
+    change their biology, even though power pose findings fail to
+    replicate
+  \end{enumerate}
+\item
+  \textbf{Legitimacy of science}
+
+  \begin{enumerate}
+
+  \item
+    Irreproducibility will lead to a decline in the authority and
+    credibility of science. Include concerns that other scientists think
+    particular subfields (e.g.~psychology, economics) are not ``real
+    sciences'' because of their reproducibility problems.
+  \item
+    Ex.~Undermine public faith in science, as evidenced in climate
+    change denialism
+  \item
+    Ex.~credibility of particular institutions of science, like
+    established journals and publishing venues
+  \item
+    Ex.~science has become politically bent, distorted by ideological
+    agendas permitted by bad research practices
+  \end{enumerate}
+\item
+  \textbf{Loss of funding}
+
+  \begin{enumerate}
+
+  \item
+    Irreproducibility issues may lead to a loss of science funding from
+    Congress, or particular research institutes.
+  \item
+    Code this only if tEx.~is explicitly about potential for loss of
+    funding, not just the implied threat from wasting taxpayer money.
+  \end{enumerate}
+\item
+  \textbf{Progress of science}
+
+  \begin{enumerate}
+
+  \item
+    Irreproducibility will slow the pace of science, leading to a slower
+    accumulation of knowledge or a slower process of findings translated
+    into public benefit. Worries about science's contributions to
+    society, interference with the pipeline from basic to applied
+    science.
+  \item
+    Exclude discussions of hindered clinical/drug applications in the
+    pharma industry; code that under \textbf{``Impact on medicine''}
+    instead.
+  \item
+    Ex.~the evolution of science \& scientific institutions into more
+    perfect versions of themselves
+  \item
+    Ex.~the ``productivity of research findings'' are worsened by
+    replication failures
+  \end{enumerate}
+\item
+  \textbf{Stakes differ by fields}
+
+  \begin{enumerate}
+
+  \item
+    Passages that emphasize: 1) the reproducibility crisis is more
+    severe or more problematic in some subfields than it is in others,
+    OR 2) the stakes do not differ by fields and are common to many/all
+    areas of science.
+  \item
+    Ex.~Irreproducibility is less of a problem in psychology than
+    medicine, because patients aren't being hurt
+  \item
+    Ex.~Problems in psychology foreshadow problems in other fields;
+    problems are not limited to psychology alone.
+  \item
+    Ex.~A one-size-fits-all solution approach will not work for all
+    scientific fields.
+  \end{enumerate}
+\end{enumerate}
+
+\hypertarget{signs-of-crisis}{%
+\subsubsection{Signs of crisis}\label{signs-of-crisis}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{Attention in scientific venues}
+
+  \begin{enumerate}
+
+  \item
+    Instances where articles cite high-profile individuals,
+    organizations, or scientific journals attending to the
+    reproducibility crisis as a sign that the crisis should be taken
+    seriously. Or referencing attention to reproducibility in formal
+    scientific symposia settings as a solution to the crisis.
+  \item
+    Exclude attention in the popular press, and code instead under
+    \textbf{``Popular press coverage''}
+  \item
+    Exclude NIH/NSF action here and code under \textbf{``Government/NGO
+    actions''}
+  \item
+    Ex.~Kahneman ``train wreck'' email as an example of an important
+    person speaking out/drawing attention to the issue
+  \item
+    Ex.~Special issues in journals or prominent articles that address
+    the sources/solutions of the crisis
+  \item
+    Ex.~Keynote speeches about reproducibility at conferences
+  \item
+    Ex.~American Statistical Association statement on p-values
+  \end{enumerate}
+\item
+  \textbf{Failures to replicate}
+
+  \begin{enumerate}
+
+  \item
+    \textbf{Important/established findings}
+
+    \begin{enumerate}
+    
+    \item
+      Failures to replicate findings that were widely assumed to be
+      stable/credible or were textbook studies.
+    \item
+      Ex.~Failure to replicate ``high profile'' or ``classic'' studies
+    \item
+      Ex.~Replication failures of ego depletion studies, priming
+      studies, power pose studies
+    \end{enumerate}
+  \item
+    \textbf{Other failures to replicate}
+
+    \begin{enumerate}
+    
+    \item
+      Failures to replicate findings, but not ones that were considered
+      very important to a field or well-established. Large-scale
+      replication projects that had high \% of studies fail to
+      replicate.
+    \item
+      Exclude predictions that a study is irreplicable.
+    \item
+      Ex.~Dana Farber MGH oncology comparison
+    \end{enumerate}
+  \end{enumerate}
+\item
+  \textbf{Fraud} (\emph{``fraud is a problem'' and ``fraud is not a
+  problem'' were merged to a single code for the final analysis)}
+
+  \begin{enumerate}
+
+  \item
+    \textbf{Fraud is a problem}
+
+    \begin{enumerate}
+    
+    \item
+      Scientific fraud/deception/falsification is a significant issue
+      contributing to irreproducibility.
+    \item
+      Ex.~Anil Potti fraud in cancer research
+    \item
+      Ex.~Diederik Stapel fraud in social psychology
+    \end{enumerate}
+  \item
+    \textbf{Fraud is not a problem}
+
+    \begin{enumerate}
+    
+    \tightlist
+    \item
+      Fraud is a rare problem or not a main problem contributing to the
+      crisis
+    \end{enumerate}
+  \item
+    Double code if fraud is identified as both problematic and not that
+    big of a deal
+
+    \begin{enumerate}
+    
+    \tightlist
+    \item
+      Ex.~Fraud is rare, but when it does happen, its results are
+      disastrous
+    \end{enumerate}
+  \end{enumerate}
+\item
+  \textbf{Governmental/NGO actions}
+
+  \begin{enumerate}
+
+  \item
+    Actions by the National Institutes of Health (NIH)/National Science
+    Foundation(NSF)/National Academy of Sciences (NAS)
+  \item
+    Include actions by individual NIH institutes, such as the NINDS,
+    NCI, NIGMS, NIDA, NIAAA, NIMH, NIA. Include non-US bodies if they
+    are similar in kind (eg. UK Academy of Medical Sciences)
+  \item
+    \emph{This code is not mutually exclusive with \textbf{``Peer
+    Review''} and \textbf{``Incentives''} codes}
+  \item
+    \emph{Don't code if Collins \& Tabak 2014 is cited but the sentence
+    doesn't mention the NIH standards explicitly.}
+  \item
+    Ex.~Introduction of NIH rigor and reproducibility policies
+  \item
+    Ex.~NINDS conference on reproducibility in 2012
+  \item
+    Ex.~Formation of NSF subcommittee on reproducibility
+  \item
+    Ex.~government agency funding for open source data sharing/coding
+    platforms
+  \end{enumerate}
+\item
+  \textbf{Implausible findings}
+
+  \begin{enumerate}
+
+  \item
+    An implausible finding produced using established methods alerts
+    people that there must be something wrong with those established
+    methods.
+  \item
+    Ex.~Bem's extrasensory perception study
+  \item
+    Ex.~Chronological rejuvenation to a Beetle's song
+  \item
+    Ex.~Dead fish fMRI study
+  \end{enumerate}
+\item
+  \textbf{Personal/individual anecdotes}
+
+  \begin{enumerate}
+
+  \item
+    A personal story of what happened to the individual speaker/author,
+    such as a failure to replicate a finding within their own lab, where
+    the personal and emotional experience is at the core of the
+    example---an ``it happened to me'' story. Also code under this if
+    the author writes about another scientist's failed replications in
+    an anecdotal, narrative way. Often occurs in quotes and personal
+    blog posts.
+  \item
+    Ex.~``I'' narratives about arduous attempts to replicate other
+    findings and having lots of trouble contacting original authors,
+    getting access to data.
+  \end{enumerate}
+\item
+  \textbf{Popular press coverage}
+
+  \begin{enumerate}
+
+  \item
+    Narratives pointing to articles or books in the popular press as a
+    sign that there is a reproducibility crisis.
+  \item
+    Ex.~``Trouble at the Lab,'' \emph{The Economist }article, 2013
+  \item
+    Ex.~``A Sharp Rise in Retractions Prompts Calls for Reform,''
+    \emph{New York Times}, 2012
+  \item
+    Ex.~``The Truth Wears Off,'' \emph{The New Yorker}, 2010
+  \end{enumerate}
+\item
+  \textbf{Quantifying problems}
+
+  \begin{enumerate}
+
+  \item
+    \textbf{2016 Nature survey}
+
+    \begin{enumerate}
+    
+    \item
+      Monya Baker's ``1,500 scientists lift the lid on reproducibility''
+      article
+    \item
+      \emph{Code under this even if the study is not described in the
+      tEx.~of the article, but the article makes an assertion about the
+      extent of the crisis and backs it up with a cite or link to this
+      survey.}
+    \end{enumerate}
+  \item
+    \textbf{Other studies quantifying problems}
+
+    \begin{enumerate}
+    
+    \item
+      Studies that try to put a number on the extent of a particular
+      problem that contributes to irreproducibility. Code even if the
+      article does not mention specific paper, but references generic
+      `scientific research' providing some quantified number related to
+      reproducibility.
+    \item
+      Exclude Ioannidis 2005 study and code under \textbf{``Ioannidis''}
+      instead
+    \item
+      Exclude Amgen/Bayer studies and code under \textbf{``Amgen/Bayer
+      studies''} instead
+    \item
+      Exclude Nosek papers and code under \textbf{``Nosek''} instead
+    \item
+      Exclude \emph{Nature} 2016 survey and code under \textbf{``Nature
+      2016 survey''} instead
+    \item
+      Ex.~Turner 2008 on selective publication and estimates of drug
+      efficacy
+    \item
+      Ex.~Kilkenny et al 2009 on quality of animal studies
+    \item
+      Ex.~Fanelli 2010, 2011 on increase in positive results
+    \item
+      Ex.~Using meta-analysis as technique to show extent or source of
+      reproducibility/methodological problems related to reproducibility
+    \end{enumerate}
+  \item
+    \textbf{Amgen or Bayer studies}
+
+    \begin{enumerate}
+    
+    \tightlist
+    \item
+      Reference to Prinz et al.~2011 ``Believe It or Not: How Much Can
+      We Rely on Published Data on Potential Drug Targets?'', and Begley
+      and Ellis 2012 ``Raise standards for preclinical cancer research''
+    \end{enumerate}
+  \end{enumerate}
+\item
+  \textbf{Reformers}
+
+  \begin{enumerate}
+
+  \item
+    \textbf{Andrew Gelman}
+
+    \begin{enumerate}
+    
+    \tightlist
+    \item
+      Code where Gelman or Gelman's work is mentioned as an indication
+      that there is a crisis, or where Gelman is cited as a
+      reformer/qualified commentator on the crisis.
+    \end{enumerate}
+  \item
+    \textbf{Brian Nosek/Center for Open Science}
+
+    \begin{enumerate}
+    
+    \item
+      Code whenever Nosek's work is cited. Include mentions of The
+      Reproducibility Project: Psychology and The Reproducibility
+      Project: Cancer Biology; the 2015 Open Science Collaboration paper
+      about the psychology project or coverage of that paper; and the
+      Many Labs projects.
+    \item
+      Use this code exclusively when coding Nosek/COS stuff, i.e. don't
+      double code with \textbf{``Replication''} or
+      \textbf{``Transparency of Data''} (unless they are included in a
+      list of separate things).
+    \item
+      \emph{Note that the Social Sciences Replication Project and
+      Science Exchange are not part of the Center for Open Science.}
+    \end{enumerate}
+  \item
+    \textbf{John Ioannidis}
+
+    \begin{enumerate}
+    
+    \item
+      Code whenever Ioannidis or his work (even if not explicitly
+      reproducibility-related work) is quoted/referenced. Code even if
+      the article doesn't mention him by name, but cites/quotes his work
+      (eg. 2005 ``Why most published findings are false'' article) as a
+      sign that there is a reproducibility crisis.
+    \item
+      \emph{Double code with \textbf{``Meta-science''} if pertinent,
+      like when the article discusses Ioannidis's work in a larger field
+      that studies science itself.}
+    \end{enumerate}
+  \end{enumerate}
+\item
+  \textbf{Retractions}
+
+  \begin{enumerate}
+
+  \item
+    Increasing number of retractions from journals, slowness to retract
+    things from the literature, and lack of visibility of retractions
+    are signs of a problem. Include passages about the need for better,
+    more consistent oversight measures to retract faulty articles.
+  \item
+    Ex.~organizations dedicated to retraction like Retraction Watch are
+    trying to combat the invisibility of retractions
+  \item
+    Ex.~Several of Wansink's major papers had to be retracted due to
+    misreporting
+  \item
+    \emph{Double code with \textbf{``Fraud''} if they are mentioned
+    together}
+  \end{enumerate}
+\end{enumerate}
+
+\hypertarget{sources-of-troublesolutions}{%
+\subsubsection{Sources of
+trouble/solutions}\label{sources-of-troublesolutions}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{Change expectations about science}
+
+  \begin{enumerate}
+
+  \item
+    \textbf{General public's expectations}
+
+    \begin{enumerate}
+    
+    \item
+      The general public needs to realize that studies are not the
+      ``absolute truth,'' and that irreproducibility of a study does not
+      imply incorrectness of theory. Also code for passages about how
+      non-scientist professionals, like judges, need to be more
+      skeptical of findings from academic labs.
+    \item
+      \emph{If it is unclear who the changing expectations message is
+      directed at, differentiate by source (i.e.~code under
+      \textbf{``General public's expectations''} if it is an article
+      aimed at the general public, and under \textbf{``Scientists'
+      Expectations''} if it is an academic article)}
+    \item
+      Ex.~General public needs to be more aware of the reproducibility
+      crisis and the limitations of modern science
+    \item
+      Ex.~General public needs to be better educated in their
+      understanding of how science really works (target K-12 schools)
+      (including their statistics education)
+    \item
+      Ex.~Science journalism has an important role to play in making
+      sure that the public gets these messages, and ensuring that
+      journalism does not distort or sensationalize science. Scientists
+      themselves need to be wary of sensationalizing the claims they
+      make about scientific research/studies to the general public.
+    \end{enumerate}
+  \item
+    \textbf{Scientists' expectations}
+
+    \begin{enumerate}
+    
+    \item
+      Change 1) expectations about what degree of reproducibility or
+      what type of reproducibility is to be expected, 2) unreasonable
+      expectations about the reliability of small studies, 3)
+      expectations about how noisy data is hard to reconcile with
+      theories, 4) expectations about the pace of scientific
+      discoveries. Include assertions that scientific funders or pharma
+      need to change their expectations, not just scientists.
+    \item
+      \emph{If it's about journals/funding agencies changing their
+      `novelty' standards related to the incentive structure that's
+      driving scientists, code only under \textbf{``Incentives.''} }
+    \item
+      Ex.~Change expectations about what a failed replication means---it
+      does not necessarily mean a `falsification' of the unreplicated
+      theory or a mark of failure. Instead, it can mean the replicating
+      lab made a mistake or the original effect is a true effect that
+      only works under specific conditions. Or it can mean an
+      `opportunity' to expand knowledge in some other way (a replication
+      failure is a good thing).
+    \item
+      Ex.~Dead ends should be expected, highly novel results should be
+      considered less likely to be reproducible.
+    \item
+      Ex.~Science is not self-correcting just by virtue of internal
+      exchange among scientists. Robust self-correction mechanisms do
+      not exist like people suggest.
+    \item
+      Ex.~Scientists have too high or uncritical expectations of ``black
+      box'' statistical tools (double code with \textbf{``Other
+      Statistical Discussion''}).
+    \end{enumerate}
+  \end{enumerate}
+\item
+  \textbf{Communication and collaboration}
+
+  \begin{enumerate}
+
+  \item
+    Developing new methods for promoting communication and collaboration
+    between different groups.
+  \item
+    \emph{Exclude exchanges of materials and code under
+    \textbf{``Reagents/technologies''} instead}
+  \item
+    Ex.~Multi-sited studies.
+  \item
+    Ex.~Deeper collaboration between pharma and academia.
+  \item
+    Ex.~Issues with communicating and teaching protocols between
+    original lab and replicating lab.
+  \item
+    Ex.~improving the specificity of common terms like `replication' to
+    ensure scientists are talking about the same thing.
+  \item
+    Ex.~Funding agencies need to collaborate to develop common policies
+    and requirements for applicants, who likely seek funding from
+    multiple sources.
+  \end{enumerate}
+\item
+  \textbf{Evidence synthesis}
+
+  \begin{enumerate}
+
+  \item
+    Lack of systematic review or integration of existing evidence, calls
+    for ``weight of evidence'' evaluations or meta-analysis. Critiques
+    of using one type of methodology and calls for using multiple
+    sources or methods to triangulate evidence.
+  \item
+    Ex.~The creation of scientific theory from multiple types of
+    evidence (conflicting or not).
+  \item
+    Ex.~Scientific theory involves the integration of a vast array of
+    results, including conflicting or irreproducible results, before
+    being able to make a generalized account.
+  \end{enumerate}
+\item
+  \textbf{Heterogeneity/generalizability of populations/samples}
+  \emph{(this code was combined with ``intrinsic complexity'' in the
+  final analysis)}
+
+  \begin{enumerate}
+
+  \item
+    Overly standardized or narrow populations/conditions/models lead to
+    poor replication/generalizability/external validity, should use more
+    multi-lab replications (i.e.~solving homogeneity with
+    heterogeneity). Alternatively, populations or protocols that are too
+    variable (e.g.~diverse cage \& lab environments for model organisms)
+    need to be further standardized to get more precise results
+    (i.e.~solving heterogeneity with homogeneity). Sentiments that small
+    factors affecting experimental measurements need to be recorded,
+    standardized, attended to in order to account for variability.
+  \item
+    This code is for tEx.~that frames problematic factors of
+    heterogeneity/homogeneity as being solvable.
+  \item
+    Ex.~systematic herogenization of lab environments
+  \item
+    Ex.~Cross-cultural research--either to make more generalizable
+    claims or to be aware of the specificity of your claims
+  \item
+    Ex.~Inclusion of children/elderly/women in research
+  \item
+    Ex.~animal models that only replicate one feature of a disease and
+    don't provide good predictions for how a drug will behave in human
+    populations
+  \end{enumerate}
+\item
+  \textbf{Incentives}
+
+  \begin{enumerate}
+
+  \item
+    Incentives in the career pathways of scientists (or in
+    science/industry broadly speaking) are encouraging problematic
+    behavior; incentives need to be realigned to correct reproducibility
+    problems. Distorting incentives might include pressure to publish,
+    to get grants, to get tenure, excitement of/desire for novel
+    results.
+  \item
+    \emph{Include discussions of differing incentives between science
+    and industry, and double code with \textbf{``Stakes Differ by
+    Fields.''} }
+  \item
+    \emph{Exclude when it's talking about incentivizing replications,
+    and code under \textbf{``Replication''} }
+  \item
+    Ex.~Change criteria for what a high-quality researcher is
+
+    \begin{enumerate}
+    
+    \item
+      Ex.~PQRST evaluation metric for researchers
+    \item
+      Ex.~reproducibility index
+    \end{enumerate}
+  \item
+    Ex.~Change tenure incentives, not emphasizing publication in
+    high-impact journals or the number of studies published
+  \item
+    Ex.~Changing incentive structure within grant mechanisms (such as
+    longer timeline) to resolve existing funding pressures
+  \item
+    Ex.~Decreased funding opportunities for scientists throws off
+    ``good'' competition, making the environment much more hostile and
+    competitive, therefore incentivizing questionable research practices
+  \end{enumerate}
+\item
+  \textbf{Intrinsic complexity} \emph{(this code was combined with
+  ``Heterogeneity/generalizability of populations/samples'' in the final
+  analysis)}
+
+  \begin{enumerate}
+
+  \item
+    Irreproducible data arises because of the intrinsic complexity of
+    the phenomenon under study (rather than the cause being sampling
+    problems, design of animal models that limits generalizability, or
+    some flaw in the research design or analysis). This intrinsic
+    complexity is often a type of ``unknown unknown.'' This code is for
+    situations in which the article implies that the complexity cannot
+    be resolved or regulated.
+  \item
+    Ex.~Sometimes effects just fade away over time because of `cosmic
+    habituation'
+  \item
+    Ex.~Complexity of gene--environment interactions
+  \item
+    Ex.~Individual variation in model organisms in emotional states and
+    stress responses affect behavioral/phenotypical measurements
+  \item
+    Ex.~Small differences in experimental context, like the testing
+    room, and experimenter's mood can have big impacts on the effect
+    size
+  \item
+    Ex.~Tiny differences in experimental technique, like rocking v.
+    shaking or the average temperature of lab, affect replication
+    success \& effect size
+  \end{enumerate}
+\item
+  \textbf{Journals and publishing culture}
+
+  \begin{enumerate}
+
+  \item
+    How journals, editors, and overall publishing culture contribute to
+    irreproducibility problems. How journals can function as gatekeepers
+    or enforcers of standards.
+  \item
+    \emph{Sometimes double code with \textbf{``Nosek/COS''} if the
+    article calls for changes in journal/publishing culture and cites
+    Nosek or COS}
+  \item
+    Ex.~\emph{Basic and Applied Social Psychology} banning the use of
+    p-values
+  \item
+    Ex.~\emph{Nature} checklist of reporting standards
+  \item
+    Ex.~Allow publication only after an exploratory study and
+    confirmatory study have been done.
+  \end{enumerate}
+
+  \item Ex.~Journals are strained enough and don't have the
+  resources/bandwidth to critically parse through the messiness of data
+  that are not communicated in `pretty' narratives.
+
+  \begin{enumerate}
+  \item
+    Ex.~Journal impact factor is criteria for success, which allows for
+    ``gaming'' behavior to increase impact factor (double code with
+    \textbf{``Incentives''}).
+  \end{enumerate}
+\item
+  \textbf{Meta-science}
+
+  \begin{enumerate}
+
+  \item
+    Code even if the article doesn't use the specific term
+    ``meta-science'' but describes something like a
+    discipline-independent field (or group of researchers, or institute)
+    devoted to thinking about scientific practice. Include any reference
+    to ``metaresearchers'' or ``metaresearch'' or ``meta-experts.''
+  \item
+    Ex.~Empirical research on the effectiveness of particular policy
+    changes and interventions within science
+  \item
+    Ex.~``Rigorologist'' hires
+  \item
+    Ex.~(METRICS) Meta-Research Innovation Center at Stanford
+  \item
+    Ex.~Research-integrity advisors hired by research institutions to
+    evaluate the integrity and quality of researchers' works
+  \end{enumerate}
+\item
+  \textbf{Peer review}
+
+  \begin{enumerate}
+
+  \item
+    Anything that has to do with having other experts reviewing
+    publications, research plans, or grants; flaws with the current
+    system and how it should be improved; funding agencies evaluating
+    proposals. Include suggestions for new or informal methods of peer
+    review.
+  \item
+    \emph{Exclude if it is about potential revenge in the grant review
+    process and code as \textbf{``Career costs to scientists.''} }
+  \item
+    Ex.~More detailed and strict peer review in journals
+  \item
+    Ex.~Peer prediction market
+  \item
+    Ex.~Peer reviewers should be paid experts.
+  \item
+    Ex.~Pre-study peer review, such as Registered Reports through Center
+    for Open Science
+  \end{enumerate}
+\item
+  \textbf{Problems with the solutions}
+
+  \begin{enumerate}
+
+  \item
+    Complaints that proposed solutions to enhance reproducibility are
+    infeasible, not cost effective, or will not be
+    enforceable/well-followed. Complaints that the way that solutions
+    have been implemented are lacking or too one-size-fits-all. Often
+    takes the general form: ``X solution is good, but insufficient to
+    solve Y problem because of reasons Z1, Z2, etc.''
+  \item
+    \emph{Double code with other problems/solutions codes, where it
+    seems appropriate}
+  \item
+    \emph{Exclude meta-science initiatives that may uncover problems
+    with the solutions, but are not general complaints about the
+    solutions (code instead under \textbf{``Meta-science''}).}
+  \item
+    Ex.~Descriptions of systematic efforts to replicate and how they've
+    failed (such as the Amgen paper not revealing the titles of
+    irreproducible papers---note that this would also be double coded
+    with \textbf{``Transparency''})
+  \item
+    Ex.~Replications do not address the deeper root of the problem, the
+    fact that psychology does not have well-developed theories
+  \item
+    Ex.~Even if we get scientists to do more replications, the field has
+    not figured out how to interpret what the results of replications
+    mean.
+  \item
+    Ex.~Even when a study is found to be irreplicable, it stays in the
+    literature for a long time and is difficult to remove.
+  \end{enumerate}
+\item
+  \textbf{Reagents or technologies} \emph{(this code was modified in the
+  final analysis to include only references to reagents, and not other
+  kinds of technologies)}
+
+  \begin{enumerate}
+
+  \item
+    Problems with particular reagents (eg. cell lines, antibodies),
+    technologies (eg. genotyping platforms, microarrays), or drug assays
+    and protocols. Ways to fix these problems. This code refers to known
+    problems with standard technologies and tools being used in
+    experiments (tools that are taken for granted which need to be
+    validated to ensure they're working as intended).
+  \item
+    Exclude {[}software glitches, bad measurements in psychological
+    tests (poor indicators, no standard definitions of behaviors),
+    problems with behavioral phenotype tests, and variability in mouse
+    lines.{]}
+  \item
+    \emph{Double code with \textbf{``Transparency''} if it is about
+    needing detailed reporting of technology versions and specific
+    reagents used.}
+  \item
+    Ex.~efforts to use the exact same reagents and materials (in
+    replication experiments)
+  \item
+    Ex.~check antibodies and cell lines for contamination
+  \end{enumerate}
+\item
+  \textbf{Regulation}
+
+  \begin{enumerate}
+
+  \item
+    New or stronger requirements and regulations for reproducibility
+    standards, enforced by an institution of some kind, not cultural
+    norms/informal/voluntary changes.
+  \item
+    \emph{Include under this code if the solution proposes that the NIH
+    or another institution should do something, but it's theoretical.}
+  \item
+    \emph{Exclude publishing requirements and code under
+    \textbf{``Journal/publishing culture.''} }
+  \item
+    \emph{Exclude actual actions that governments/NGOs has already taken
+    or is very likely to take, and code under \textbf{``Governmental/NGO
+    actions''} instead}
+  \item
+    Ex.~Research institutions should mandate open data access
+  \item
+    Ex.~increased oversight for potential misconduct, led by IRBs or
+    independent investigative unit
+  \item
+    Ex.~Lab notebook auditing
+  \item
+    Ex.~Problems with ethical review board regulations that encourage
+    smaller sample sizes for model organisms, which contribute to low
+    power and low reproducibility.
+  \end{enumerate}
+\item
+  \textbf{Replication}
+
+  \begin{enumerate}
+
+  \item
+    Comments about the lack of replication in current scientific
+    practice, the need to incentivize more of it, ways to fund
+    replications, and examples of successful large-scale replication
+    endeavors or platforms.
+  \item
+    \emph{Exclude Center for Open Science stuff, and code that instead
+    under \textbf{``Nosek/COS''} }
+  \item
+    Ex.~Labs should replicate their own work before attempting to
+    publish it.
+  \item
+    Ex.~Science Exchange service for performing replications.
+  \item
+    Ex.~Create journals specifically for publishing replications (double
+    code with \textbf{``Journals/publishing culture''})
+  \item
+    Ex.~Need clear standards for what constitutes an appropriate
+    replication, different kinds of replications.
+  \item
+    Ex.~Conceptual replications are insufficient to determine which
+    research is irreplicable, and are similarly unpublishable. Not
+    enough incentives for direct replications.
+  \end{enumerate}
+\item
+  \textbf{Reporting}
+
+  \begin{enumerate}
+
+  \item
+    \textbf{Selective reporting}
+
+    \begin{enumerate}
+    
+    \item
+      Lack of publication of null results; bias towards publication of
+      positive results; the ``file drawer'' problem; general suggestions
+      that fields need to become more receptive to null/negative
+      results. Code passages that discuss general publication bias, and
+      do not code under \textbf{``Bias''} code.
+    \item
+      Ex.~need to create venues where null results can be published
+      (double code with \textbf{``Journal/publishing culture''} if the
+      role of journal editors is emphasized)
+    \item
+      Ex.~PsychFileDrawer
+    \item
+      Ex.~Journals/scientists favor telling the ``perfect story,''
+      artificially tidied results, and inflated import. (double code
+      with \textbf{``General public's expectations''} if it's about
+      scientists trying to give inflated versions of their results,
+      giving the public misconceptions of science.)
+    \end{enumerate}
+  \item
+    \textbf{Transparency of data and methodology}
+
+    \begin{enumerate}
+    
+    \item
+      Calls for ``open science'' or ways to make data and methodology
+      more accessible to people other than the original creators; calls
+      for more transparent and complete reporting of different aspects
+      of methodology in publications. Include problems with transparency
+      of funding sources and poor documentation/lab notebook practices.
+    \item
+      \emph{Double code with \textbf{``Problems with Solutions''} if
+      systematic efforts to replicate experiments were not transparent
+      enough about their methodology, data sets, etc.}
+    \item
+      Ex.~the need to create new reporting standards or enforce existing
+      ones (eg CONSORT, ARRIVE, EQUATOR standards) (double code with
+      \textbf{``Journals \& Publishing Culture''} if journals are the
+      ones enforcing ARRIVE standards or something similar)
+    \item
+      Ex.~Make raw data publicly available
+    \item
+      Ex.~Use digital notebooks to track data, methods, people (good
+      data record keeping, like version control)
+    \item
+      Ex.~Journals should allow for more extensive descriptions of
+      methods (double code with "\textbf{Journals/publishing culture"})
+    \end{enumerate}
+  \end{enumerate}
+\item
+  \textbf{Research methods}
+
+  \begin{enumerate}
+
+  \item
+    \textbf{Bias}
+
+    \begin{enumerate}
+    
+    \item
+      Ways in which various forms of cognitive bias (e.g. confirmation
+      bias, anchoring bias, selection bias, groupthink) or general human
+      bias can contribute to irreproducibility. This code's purpose is
+      to capture forms of bias that other, more specific codes do not
+      already encompass. For example, issues with experimental blinding
+      should go under \textbf{``Experimental Design''} code, and not
+      under this code.
+    \item
+      Ex.~A PI's bias toward his/her ``pet theory'' that they have spent
+      a long career developing and refining
+    \item
+      Ex.~conflicts of interest from funding sources, personal
+      connections that could distort results
+    \item
+      Ex.~groupthink in the scientific establishment
+    \end{enumerate}
+  \item
+    \textbf{Data collection and analysis}
+
+    \begin{enumerate}
+    
+    \item
+      Ways in which data collection and analysis practices can
+      contribute to irreproducibility.
+    \item
+      Exclude analysis problems that are about statistical issues
+    \item
+      Include questionable research practices (QRPs) \emph{except} 1) if
+      pejorative in tone, in which case code under \textbf{``Sloppy
+      Research,''} or 2) if it's about p-hacking or strongly implying
+      the idea of p-hacking, code only under \textbf{``P-values''}
+    \item
+      Ex.~Need high integrity, complete data collection processes,
+      especially when working with big data processes or lots of data
+      collected over time (like when testing iterations of drugs)
+    \item
+      Ex.~Continuing to collect data points to find a significant
+      result, or stopping collection once a significant result is
+      obtained
+    \item
+      Ex.~``Researcher degrees of freedom''
+    \item
+      Ex.~HARKing (Hypothesizing After Results are Known)
+    \item
+      Ex.~blind data analysis (writing all analyses on a
+      machine-generated, scrambled data set and then applying all those
+      analyses to the real data set)
+    \end{enumerate}
+  \item
+    \textbf{Experimental design}
+
+    \begin{enumerate}
+    
+    \item
+      Ways in which poor experimental design and structure can
+      contribute to irreproducibility; potential solutions to improve
+      experimental design.
+    \item
+      Ex.~Lack of proper randomization and controls
+    \item
+      Ex.~More blinding in studies
+    \item
+      Ex.~Computer-based tools for experimental design
+    \item
+      Ex.~researcher's choice of operationalization of variables
+      (e.g.~how the researcher actually measures something abstract like
+      health outcomes in a hospital)
+    \item
+      Ex.~strong inference tests, explicitly developing a competing
+      hypothesis and designing experiments to differentiate between the
+      two
+    \end{enumerate}
+  \item
+    \textbf{Pre-registration of study protocols}
+
+    \begin{enumerate}
+    
+    \item
+      Calls for pre-registration of papers as a solution.
+    \item
+      Ex.~Center for Open Science Registered Reports
+    \item
+      Ex.~Locked methodology and statistical tests
+    \end{enumerate}
+  \item
+    \textbf{Sloppy research practices}
+
+    \begin{enumerate}
+    
+    \item
+      Statements that have a pejorative tone about how researchers are
+      ``sloppy,'' ``careless,'' or using ``poor'' methodology;
+      statements implying that scientists simply need to adhere to
+      scientific common sense rather than doing something radically
+      different or new.
+    \item
+      Ex.~``It is astonishing that scientists do not do this or that in
+      their experimental practices\ldots{}''
+    \item
+      Ex.~culture of `statistical rituals' in which scientists do not
+      use common sense about basic statistics
+    \item
+      Ex.~Highly pejorative discussions of questionable research
+      practices
+    \end{enumerate}
+  \item
+    \textbf{Training in research methods}
+
+    \begin{enumerate}
+    
+    \item
+      Lack of research methods training, especially for junior
+      scientists, and need for new training opportunities. Include
+      training in formal and informal education settings.
+    \item
+      \emph{Include training in statistics and double code with
+      \textbf{``Statistical methods''} only if the passage discusses
+      specific changes to statistical practice.}
+    \item
+      Ex.~PIs should mentor junior scientists more closely, provide
+      greater oversight of the experiments done in their lab
+    \item
+      Ex.~Training in prudent scientific practice, like validating
+      scientific reagents (double code with \textbf{``Reagents''})
+    \item
+      Ex.~Labs with sloppy research methods get ahead and pass on their
+      practices with their lab offspring
+    \item
+      Ex.~Textbooks used in coursework do not accurately represent the
+      controversies surrounding certain major findings.
+    \end{enumerate}
+  \end{enumerate}
+\item
+  \textbf{Statistical methods}
+
+  \begin{enumerate}
+
+  \item
+    \textbf{Bayesian stats}
+
+    \begin{enumerate}
+    
+    \item
+      Over-reliance on frequentist statistics as a source of
+      irreproducibility, suggestions that Bayesian approaches can help
+      solve the problem.
+    \item
+      Ex.~use of Bayesian priors
+    \end{enumerate}
+  \item
+    \textbf{Effect size}
+
+    \begin{enumerate}
+    
+    \item
+      Problems with declining effect sizes over time in the literature;
+      artificially inflated effect sizes in the literature due to
+      publication bias (double code with \textbf{``Selective
+      reporting''}).
+    \item
+      Ex.~Reduction in efficacy of treatment after consideration of
+      unpublished trials
+    \item
+      Ex.~calculated replicability of experiments should not depend on
+      the effect size
+    \item
+      Ex.~Because of the history of landmark advancements, scientists
+      now seek smaller and smaller effects in their experiments,
+      contributing to the difficulty of picking out subtle effect sizes
+      from all the noise
+    \end{enumerate}
+  \item
+    \textbf{Other statistical discussion}
+
+    \begin{enumerate}
+    
+    \item
+      Discussions of statistical problems/solutions that do not fit well
+      into other statistics code categories.
+    \item
+      Ex.~Scientists should report confidence intervals
+    \item
+      Ex.~Automatic, mechanical execution of statistical tests without
+      exercising appropriate judgment
+    \item
+      Ex.~Attention to statistical rigor needs to be incorporated into
+      everyday culture
+    \item
+      Ex.~Need for better statistical tools \& packages to allow
+      scientists with basic data science training to do robust,
+      reproducible stat analysis
+    \item
+      Ex.~a priori inferences about sample/population means and standard
+      deviations
+    \end{enumerate}
+  \item
+    \textbf{P-value problems and changes}
+
+    \begin{enumerate}
+    
+    \item
+      Discussion of problems with the use of a 0.05 alpha level and
+      interpretation of p-values by scientists or lay public;
+      discussions of p-hacking and false-positive manipulation;
+      proposals to stop using p-values and null hypothesis significance
+      testing as a method. Code if popular articles talk about p-value
+      issues in plain language without mentioning the term specifically
+      (such as ``significance'' or ``null hypothesis'' testing or
+      ``false-positive'' data manipulation).
+    \item
+      \emph{Double code with \textbf{``Data collection/analysis''} if
+      pertaining to the ways in which Researcher Degrees of Freedom can
+      inflate type I errors/false-positives that seem in line with
+      p-hacking.}
+    \item
+      Ex.~Different p-value standards for different fields
+    \item
+      Ex.~Need explicit declaration of ``No p-hacking'' in each paper
+    \item
+      Ex.~Multiplicity issues leading to high false discovery rate
+    \item
+      Ex.~data-dredging, data-fishing for a low p-value
+    \end{enumerate}
+  \item
+    \textbf{Sample size and power}
+
+    \begin{enumerate}
+    
+    \item
+      Claims that most studies use sample sizes that are too small and
+      are therefore under-powered; calls to increase sample sizes.
+    \item
+      Ex.~Compute necessary sample size beforehand and justify the
+      quantity
+    \end{enumerate}
+  \end{enumerate}
+\end{enumerate}
+
+\end{document}
