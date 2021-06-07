@@ -8,6 +8,7 @@ library(FactoMineR)
 library(ggplot2)
 library(viridis)
 library(ggrepel)
+library(moderndive)
 
 
 ##Create a data frame of IRR scores
@@ -114,14 +115,27 @@ df_coverage_4 <-select(df_coverage_3, -Year) %>% #remove the year column
 
 df_coverage_5 <- data.frame(t(df_coverage_4)) #make the nodes the rows instead of the columns
 
-#Create data frame for mean article profiles by year grouping
+#Create data from for mean percent coverage of nodes
+df_mean_article <-df_coverage_3 %>%
+  filter(Year != "Before 2011") %>% #remove articles published before 2011
+  select(Name, Year, everything()) %>% #move the year column to the front
+  mutate(total_coded = rowSums(.[3:31])) %>% # calculate the total % of text coded in each article
+  mutate_at(c(3:31), funs((./total_coded)*100)) %>% #for each node, calculate the % of text coded as a % of total text coded
+  summarise_if(is.numeric, mean) %>% #calculate the mean % of text coded for each node in  year grouping
+  select(-c(30)) %>% #remove the % of text coded column
+  gather(key = "Node", value = "mean_%_coverage") %>% #reformat the data from wide to long
+  rename(`mean_%_coverage_overall` = `mean_%_coverage`)
+
+coverage_mean <- mean(df_mean_article$`mean_%_coverage_overall`)
+
+#Create data frame for mean percent coverage of nodes by year
 df_mean_article_year <-df_coverage_3 %>%
   filter(Year != "Before 2011") %>% #remove articles published before 2011
   select(Name, Year, everything()) %>% #move the year column to the front
   mutate(total_coded = rowSums(.[3:31])) %>% # calculate the total % of text coded in each article
   mutate_at(c(3:31), funs((./total_coded)*100)) %>% #for each node, calculate the % of text coded as a % of total text coded
-  group_by(Year) %>% #grouping by the year column doesn't do anything visible, but it allows the next calcuation to be performed
-  summarise_if(is.numeric, mean) %>% #calculate the mean % of text coded for each node in year year grouping
+  group_by(Year) %>% #grouping by the year column doesn't do anything visible, but it allows the next calculation to be performed
+  summarise_if(is.numeric, mean) %>% #calculate the mean % of text coded for each node in  year grouping
   select(-c(31)) %>% #remove the % of text coded column
   select(Year, everything()) %>% #move the year column to the front
   gather(-c(1), key = "Node", value = "mean_%_coverage") #reformat the data from wide to long
@@ -181,12 +195,19 @@ df_MFA_node_contrib_cos <- data_frame("Contrib1" = MFA_contrib1_nodes,
   mutate(Contrib1_2 = Contrib1 + Contrib2) %>% #create a new variable for contribution on the first factor plane
   mutate(Cos2_1_2 = Cos2_1 + Cos2_2) #create a new variable for cos2 on the first factor plane
 
+Contrib1_2_mean <- mean(df_MFA_node_contrib_cos$Contrib1_2)
+
 #Combine node coordinates and contribution/cos2 information
 df_MFA_nodes_2 <-inner_join(df_MFA_nodes_overall, df_MFA_node_contrib_cos, by = "Node")
 df_MFA_nodes_3 <- inner_join(df_MFA_nodes_2, df_MFA_nodes, by = "Node")
 df_MFA_nodes_4 <- inner_join(df_MFA_nodes_3, df_mean_article_year, by = c("Year" = "Year", "Node" = "Node")) %>%
-  mutate_if(is.numeric, round, 2) %>% #round to two decimal places
-  select(Node, Year, Dim1, Dim2, dist_org, `mean_%_coverage`, everything())
+  mutate_if(is.numeric, round, 2) #round to two decimal places
+df_MFA_nodes_5 <- inner_join(df_MFA_nodes_2, df_mean_article, by = c("Node" = "Node"))
+
+#Identify the nodes with above average % coverage and below average contributions
+large_text_small_contrib <- df_MFA_nodes_5 %>%
+  filter(Contrib1_2<Contrib1_2_mean) %>%
+  filter(`mean_%_coverage_overall`>coverage_mean)
 
 #Extract coordinates, contribution, and cos2 for articles
 MFA_dim1_articles <- MFA_result$freq$coord[,1]
@@ -218,11 +239,11 @@ df_MFA_articles_2 <- inner_join(df_MFA_articles, df_metadata_2, by="Name") %>%
   mutate(Cos2_1_2 = Cos2_1 + Cos2_2) #create a new variable for cos2 on the first factor plane
  
 df_MFA_articles_3 <- inner_join(df_MFA_articles_2, df_auto_code, by = "Name") %>% #add the auto-code data to the articles data frame
-  mutate(Psychology_log_trans = log1p(`Psychology (auto)`))
+  mutate(Psychology_log_trans = log1p(`Psychology (auto)`)) 
 
 
 ##Create figures using ggplot
-#plot global analysis
+#plot global analysis, labeling most contributing nodes
 ggplot(df_MFA_nodes_2, label=Node,
        aes(x=Dim1_overall, y=Dim2_overall))+
   geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
@@ -236,7 +257,24 @@ ggplot(df_MFA_nodes_2, label=Node,
                   aes(label=Node), 
                   point.padding = 0.25, box.padding = 0.5)+
   labs(size="Contribution", color="Mentions of psychology",
-       x="Dim 1: 'Discipline' (8.78%)", y="Dim 2: 'Audience' (7.78%)")+
+       x="Dim 1: Bench vs. statistical methods (8.78%)", y="Dim 2: Social vs. technical issues (7.78%)")+
+  theme(legend.position = "bottom")
+
+#plot global analysis, labeling nodes with below average contributions and above average % coverage
+ggplot(df_MFA_nodes_2, label=Node,
+       aes(x=Dim1_overall, y=Dim2_overall))+
+  geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
+  geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
+  theme_bw()+
+  geom_point(data= df_MFA_articles_3, size=1.2,
+             aes(x=Dim1, y=Dim2, color=Psychology_log_trans))+
+  scale_color_viridis(direction = -1, option = "D")+
+  geom_point(shape=1, aes(size=Contrib1_2))+
+  geom_text_repel(data = large_text_small_contrib,
+                  aes(label=Node), 
+                  point.padding = 0.25, box.padding = 0.5)+
+  labs(size="Contribution", color="Mentions of psychology",
+       x="Dim 1: Bench vs. statistical methods (8.78%)", y="Dim 2: Social vs. technical issues (7.78%)")+
   theme(legend.position = "bottom")
 
 #plot subsets by year grouping
@@ -256,9 +294,28 @@ ggplot(df_MFA_articles_3,
                   point.padding = 0.25, box.padding = 0.5)+
   facet_wrap(~Year)+
   labs(size="Contribution", color="Mentions of psychology",
-       x="Dim 1: 'Discipline' (8.78%)", y="Dim 2: 'Audience' (7.78%)")+
+       x="Dim 1: Bench vs. statistical methods (8.78%)", y="Dim 2: Social vs. technical issues (7.78%)")+
   theme(legend.position = "bottom")
 
+#calculate correlations between word frequency variables and Dimension 1
+df_MFA_articles_3 %>%
+  get_correlation(formula = Dim1 ~ Psychology_log_trans)
 
+df_MFA_articles_3 %>%
+  group_by(Year) %>%
+  get_correlation(formula = Dim1 ~ Psychology_log_trans)
 
+df_MFA_articles_3 %>%
+  get_correlation(formula = Dim1 ~ `Reagent, antibody, cell line (auto)`)
+
+df_MFA_articles_3 %>%
+  group_by(Year) %>%
+  get_correlation(formula = Dim1 ~ `Reagent, antibody, cell line (auto)`)
+
+df_MFA_articles_3 %>%
+  get_correlation(formula = Dim1 ~ `NIH (auto)`)
+
+df_MFA_articles_3 %>%
+  group_by(Year) %>%
+  get_correlation(formula = Dim1 ~ `NIH (auto)`)
 
