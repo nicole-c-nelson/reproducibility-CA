@@ -306,13 +306,6 @@ df_MFA_articles_3 %>%
   get_correlation(formula = Dim1 ~ Psychology_log_trans)
 
 df_MFA_articles_3 %>%
-  get_correlation(formula = Dim1 ~ `Reagent, antibody, cell line (auto)`)
-
-df_MFA_articles_3 %>%
-  group_by(Year) %>%
-  get_correlation(formula = Dim1 ~ `Reagent, antibody, cell line (auto)`)
-
-df_MFA_articles_3 %>%
   get_correlation(formula = Dim1 ~ `NIH (auto)`)
 
 df_MFA_articles_3 %>%
