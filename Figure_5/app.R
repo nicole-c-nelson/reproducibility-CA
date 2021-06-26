@@ -1,11 +1,3 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
 
 library(shiny)
 library(tidyverse)
@@ -20,7 +12,9 @@ df_original_bootstrap <- readRDS("df_original_bootstrap.RDS")
 df_bootstrap_hull <- readRDS("df_original_bootstrap_hull.RDS")
 df_bootstrap_nodes <- readRDS("df_bootstrap_nodes.RDS")
 
-
+## generate plot for figure 5 with two inputs:
+## x filters for nodes selected in the input panels
+## y is a toggle for setting the coordinate system to fixed or not fixed
 fig_5_plot <- function(x, y) {
     p <-
         ggplot(data = df_bootstrap_partial_points %>% filter(Node %in% x),
@@ -73,11 +67,13 @@ fig_5_plot <- function(x, y) {
     }
 }
 
+## list of all nodes for display in UI
 NodeList <- df_bootstrap_partial_points %>%
     distinct(Node) %>%
     arrange(Node) %>%
     pull()
 
+## set initial list of nodes to select in UI
 NodeListInit <- df_bootstrap_partial_points %>%
     distinct(Node) %>%
     filter(
@@ -197,7 +193,7 @@ ui <- navbarPage("Nelson et al",
                               # Sidebar with a slider input for number of bins
                               sidebarLayout(
                                   # Show a plot of the generated distribution
-                                  mainPanel(plotOutput("distPlot"),),
+                                  mainPanel(plotOutput("fig5_Plot"),),
                                   sidebarPanel(
                                       checkboxGroupInput(
                                           "nodeSelect",
@@ -233,7 +229,7 @@ ui <- navbarPage("Nelson et al",
 
 
 server <- function(input, output) {
-    output$distPlot <- renderPlot({
+    output$fig5_Plot <- renderPlot({
         fig_5_plot(input$nodeSelect, input$axesToggle)
     })
     
