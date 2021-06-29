@@ -117,11 +117,15 @@ references <- readxl::read_xlsx("Classification Sheet - Reference.xlsx") %>%
 
 #join with articles, create text for popup/infobox
 df_CA_results_articles_3 <- df_CA_results_articles_2 %>% 
+    mutate(audience = str_replace(audience, "[:punct:]", " ")) %>% 
     left_join(references, by = c("Name" = "reference"))  %>% 
     mutate(popup = paste0("<b>", short_title, "</b><br>",
                           author.y, "<br>",
                           ifelse(is.na(url), "", url_html), "<br>",
-                          ifelse(is.na(doi), "", doi_html)))
+                          ifelse(is.na(doi), "", doi_html),"<br>",
+                          "Dim. 1: ", round(Dim_1, 1), "<br>",
+                          "Dim. 2: ", round(Dim_2, 1), "<br>",
+                          "Audience: ", audience))
 
 
 # functions
@@ -136,21 +140,7 @@ create_output_articles <- function(x) {
             maxpoints = 1,
             addDist = T
         )
-    paste0(
-        art_clicked$popup,
-        "\n",
-        "Dimension 1: ",
-        art_clicked$Dim_1,
-        "\n",
-        "Dimension 2: ",
-        art_clicked$Dim_2,
-        "\n",
-        "Audience: ",
-        art_clicked$audience,
-        "\n",
-        "Author: ",
-        art_clicked$author
-    )
+    art_clicked$popup
 }
 
 create_output <- function(x) {
@@ -237,7 +227,7 @@ ui <- navbarPage("Nelson et al",
                               titlePanel("Correspondence analysis"),
                               sidebarLayout(
                                   mainPanel(
-                                      plotOutput("fig2_plot", height = 350,
+                                      plotOutput("fig2_plot", height = 1000,
                                                  click = "plot_click"),
                                       p(
                                           "Click on any nodes or article points in the plot to get more information about them."
@@ -245,9 +235,9 @@ ui <- navbarPage("Nelson et al",
                                   ),
                                   sidebarPanel(
                                       h3("Node Information"),
-                                      verbatimTextOutput("node_info"),
+                                      textOutput("node_info"),
                                       h3("Article information"),
-                                      verbatimTextOutput("article_info")
+                                      uiOutput("article_info")
                                   )
                               )
                           ))))
@@ -313,17 +303,17 @@ server <- function(input, output) {
         renderText(create_output(input$plot_click))
     
     output$article_info <-
-        renderHt(create_output_articles(input$plot_click))
+        renderText(create_output_articles(input$plot_click))
     
-    output$hover_info <- renderPrint({
+    output$hover_info <- renderText({
         cat("input$plot_hover:\n")
         str(input$plot_hover)
     })
-    output$dblclick_info <- renderPrint({
+    output$dblclick_info <- renderText({
         cat("input$plot_dblclick:\n")
         str(input$plot_dblclick)
     })
-    output$brush_info <- renderPrint({
+    output$brush_info <- renderText({
         cat("input$plot_brush:\n")
         str(input$plot_brush)
     })
