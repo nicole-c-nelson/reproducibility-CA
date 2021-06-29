@@ -2,6 +2,8 @@
 library(shiny)
 library(tidyverse)
 library(ggrepel)
+library(janitor)
+library(viridis)
 
 
 # Figure 5
@@ -101,20 +103,41 @@ NodeListInit <- df_bootstrap_partial_points %>%
 
 load("fig2a_data.RData")
 
+# merge in bibliographic data
+references <- readxl::read_xlsx("Classification Sheet - Reference.xlsx") %>% 
+    clean_names() %>% 
+    mutate(reference = str_replace(reference, 
+                                   "Files\\\\{2}", "")) %>% 
+    mutate(reference = str_replace_all(reference, "[^a-zA-Z0-9]", "")) %>% #remove special characters, which cause problems in some people's systems
+    mutate(across(, ~na_if(., "Unassigned"))) %>% 
+    mutate(short_title = if_else(is.na(short_title), title, short_title)) %>% 
+    mutate(doi_html = paste0("<a href=\"https://doi.org/", doi, '/">', doi, '</a>')) %>% 
+    mutate(url_html = paste0("<a href=\"", url, '/">', url, '</a>')) %>% 
+    select(reference, author, doi, doi_html, date, reference_type, short_title, url, url_html, aa_audience, aa_clarification, aa_journalist, aa_skeptical, aa_terms)
+
+#join with articles, create text for popup/infobox
+df_CA_results_articles_3 <- df_CA_results_articles_2 %>% 
+    left_join(references, by = c("Name" = "reference"))  %>% 
+    mutate(popup = paste0("<b>", short_title, "</b><br>",
+                          author.y, "<br>",
+                          ifelse(is.na(url), "", url_html), "<br>",
+                          ifelse(is.na(doi), "", doi_html)))
+
+
 # functions
 # take coordinates from plot_click and return text for output
 
 create_output_articles <- function(x) {
     art_clicked <-
         nearPoints(
-            df_CA_results_articles_2,
+            df_CA_results_articles_3,
             x,
             threshold = 5,
             maxpoints = 1,
             addDist = T
         )
     paste0(
-        art_clicked$Name,
+        art_clicked$popup,
         "\n",
         "Dimension 1: ",
         art_clicked$Dim_1,
@@ -141,7 +164,7 @@ create_output <- function(x) {
         )
     art_clicked <-
         nearPoints(
-            df_CA_results_articles_2,
+            df_CA_results_articles_3,
             x,
             threshold = 15,
             maxpoints = 1,
@@ -174,7 +197,9 @@ create_output <- function(x) {
             art_clicked$audience,
             "\n",
             "Author: ",
-            art_clicked$author
+            art_clicked$author,
+            "\n",
+            art_clicked$popup
         )
     }
     else {
@@ -234,7 +259,7 @@ server <- function(input, output) {
     })
     
     output$fig2_plot <- renderPlot({
-        ggplot(df_CA_results_articles_2, aes(Dim_1, Dim_2)) +
+        ggplot(df_CA_results_articles_3, aes(Dim_1, Dim_2)) +
             theme_bw() +
             theme(panel.grid.major = element_blank(),
                   panel.grid.minor = element_blank()) +
@@ -288,7 +313,7 @@ server <- function(input, output) {
         renderText(create_output(input$plot_click))
     
     output$article_info <-
-        renderText(create_output_articles(input$plot_click))
+        renderHt(create_output_articles(input$plot_click))
     
     output$hover_info <- renderPrint({
         cat("input$plot_hover:\n")
