@@ -309,8 +309,7 @@ df_MFA_articles_3 %>%
 CIr(0.453, 39, level = 0.95)
 CIr(0.179, 46, level = 0.95)
 CIr(0.392, 104, level = 0.95)
+CIr(0.182, 146, level = 0.95)
 
 df_MFA_articles_3 %>%
   get_correlation(formula = Dim2 ~ Psychology_log_trans)
-CIr(-0.169, 335, level = 0.95)
-
