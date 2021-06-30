@@ -9,6 +9,7 @@ library(ggplot2)
 library(viridis)
 library(ggrepel)
 library(moderndive)
+library(psychometric)
 
 
 ##Create a data frame of IRR scores
@@ -297,25 +298,19 @@ ggplot(df_MFA_articles_3,
        x="Dim 1: Bench vs. statistical methods (8.78%)", y="Dim 2: Social vs. technical issues (7.78%)")+
   theme(legend.position = "bottom")
 
-#calculate correlations between word frequency variables and Dimension 1
+#calculate correlations between psychology word frequency variable and Dimensions 1 and 2
 df_MFA_articles_3 %>%
   get_correlation(formula = Dim1 ~ Psychology_log_trans)
+CIr(0.247, 335, level = 0.95)
 
 df_MFA_articles_3 %>%
   group_by(Year) %>%
   get_correlation(formula = Dim1 ~ Psychology_log_trans)
+CIr(0.453, 39, level = 0.95)
+CIr(0.179, 46, level = 0.95)
+CIr(0.392, 104, level = 0.95)
 
 df_MFA_articles_3 %>%
-  get_correlation(formula = Dim1 ~ `Reagent, antibody, cell line (auto)`)
-
-df_MFA_articles_3 %>%
-  group_by(Year) %>%
-  get_correlation(formula = Dim1 ~ `Reagent, antibody, cell line (auto)`)
-
-df_MFA_articles_3 %>%
-  get_correlation(formula = Dim1 ~ `NIH (auto)`)
-
-df_MFA_articles_3 %>%
-  group_by(Year) %>%
-  get_correlation(formula = Dim1 ~ `NIH (auto)`)
+  get_correlation(formula = Dim2 ~ Psychology_log_trans)
+CIr(-0.169, 335, level = 0.95)
 
