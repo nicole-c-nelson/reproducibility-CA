@@ -236,7 +236,11 @@ ui <- navbarPage("Nelson et al",
                               sidebarLayout(
                                   mainPanel(
                                       plotOutput("fig2_plot", height = 1000,
-                                                 click = "plot_click"),
+                                                 click = "plot_click",
+                                                 dblclick = "plot_dblclick",
+                                                 brush = brushOpts(
+                                                     id = "plot_brush",
+                                                     resetOnNew = TRUE)),
                                       p(
                                           "Click on any nodes or article points in the plot to get more information about them."
                                       )
@@ -254,6 +258,22 @@ ui <- navbarPage("Nelson et al",
 server <- function(input, output) {
     output$fig5_Plot <- renderPlot({
         fig_5_plot(input$nodeSelect, input$axesToggle)
+    })
+    
+    ranges <- reactiveValues(x = NULL, y = NULL)
+    
+    # When a double-click happens, check if there's a brush on the plot.
+    # If so, zoom to the brush bounds; if not, reset the zoom.
+    observeEvent(input$plot_dblclick, {
+        brush <- input$plot_brush
+        if (!is.null(brush)) {
+            ranges$x <- c(brush$xmin, brush$xmax)
+            ranges$y <- c(brush$ymin, brush$ymax)
+            
+        } else {
+            ranges$x <- NULL
+            ranges$y <- NULL
+        }
     })
     
     output$fig2_plot <- renderPlot({
@@ -302,7 +322,8 @@ server <- function(input, output) {
                 x = "Dimension 1: ‘Discipline’ (8.50%)",
                 y = "Dimension 2: ‘Audience’ (7.73%)"
             ) +
-            theme(legend.position = "bottom")
+            theme(legend.position = "bottom") +
+            coord_cartesian(xlim = ranges$x, ylim = ranges$y, expand = FALSE)
         
         
     })
