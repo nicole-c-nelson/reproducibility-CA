@@ -103,23 +103,31 @@ NodeListInit <- df_bootstrap_partial_points %>%
 
 load("fig2a_data.RData")
 
-# merge in bibliographic data
+## merge in bibliographic data
+### need to fetch exported Zotero database for publication name
+zotero_ref <- read_csv("zotero_export.csv") %>% 
+    clean_names() %>% 
+    select(title, publication_title)
+
 references <- readxl::read_xlsx("Classification Sheet - Reference.xlsx") %>% 
     clean_names() %>% 
+    inner_join(zotero_ref, references, by = "title") %>%
     mutate(reference = str_replace(reference, 
                                    "Files\\\\{2}", "")) %>% 
     mutate(reference = str_replace_all(reference, "[^a-zA-Z0-9]", "")) %>% #remove special characters, which cause problems in some people's systems
-    mutate(across(, ~na_if(., "Unassigned"))) %>% 
+    mutate(across(, ~na_if(., "Unassigned"))) %>% #Nvivo has NA cells as "unassigned"
     mutate(short_title = if_else(is.na(short_title), title, short_title)) %>% 
-    mutate(doi_html = paste0("<a href=\"https://doi.org/", doi, '/">', doi, '</a>')) %>% 
+    mutate(doi_html = paste0("doi:<a href=\"https://doi.org/", doi, '/">', doi, '</a>')) %>% 
     mutate(url_html = paste0("<a href=\"", url, '/">', url, '</a>')) %>% 
-    select(reference, author, doi, doi_html, date, reference_type, short_title, url, url_html, aa_audience, aa_clarification, aa_journalist, aa_skeptical, aa_terms)
+    select(reference, author, doi, doi_html, date, reference_type, publication_title, short_title, url, url_html, aa_audience, aa_clarification, aa_journalist, aa_skeptical, aa_terms)
 
 #join with articles, create text for popup/infobox
 df_CA_results_articles_3 <- df_CA_results_articles_2 %>% 
     mutate(audience = str_replace(audience, "[:punct:]", " ")) %>% 
     left_join(references, by = c("Name" = "reference"))  %>% 
+    mutate(url = ifelse(!is.na(doi), NA, url)) %>% # if doi is present, set URL to NA
     mutate(popup = paste0("<b>", short_title, "</b><br>",
+                          "<em>", publication_title, "</em><br>",
                           author.y, "<br>",
                           ifelse(is.na(url), "", url_html), "<br>",
                           ifelse(is.na(doi), "", doi_html),"<br>",
