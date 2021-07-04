@@ -131,10 +131,20 @@ df_CA_results_articles_3 <- df_CA_results_articles_2 %>%
                           author.y, "<br>",
                           ifelse(is.na(url), "", url_html), "<br>",
                           ifelse(is.na(doi), "", doi_html),"<br>",
-                          "Dim. 1: ", round(Dim_1, 1), "<br>",
-                          "Dim. 2: ", round(Dim_2, 1), "<br>",
+                          "Dimension 1: ", round(Dim_1, 2), "<br>",
+                          "Dimension 2: ", round(Dim_2, 2), "<br>",
                           "Audience: ", audience))
 
+#create infobox variable for nodes:
+df_CA_results_nodes <- df_CA_results_nodes %>% 
+    mutate(popup = paste0("<b>",Node,"</b>",
+                          "<br>",
+                          "Dimension 1: ", 
+                          round(Dim_1, 2),
+                          "<br>",
+                          "Dimension 2: ",
+                          round(Dim_2, 2)
+    ))
 
 # functions
 # take coordinates from plot_click and return text for output
@@ -160,54 +170,25 @@ create_output <- function(x) {
             maxpoints = 1,
             addDist = TRUE
         )
-    art_clicked <-
-        nearPoints(
-            df_CA_results_articles_3,
-            x,
-            threshold = 15,
-            maxpoints = 1,
-            addDist = TRUE
-        )
-    toggle <-
-        if (!is.null(node_clicked$Node)) {
-            paste0(
-                node_clicked$Node,
-                "\n",
-                "Dimension 1: ",
-                node_clicked$Dim_1,
-                "\n",
-                "Dimension 2: ",
-                node_clicked$Dim_2,
-                "\n"
-            )
-        }
-    else if (!is.null(art_clicked$Name)) {
-        paste0(
-            art_clicked$Name,
-            "\n",
-            "Dimension 1: ",
-            art_clicked$Dim_1,
-            "\n",
-            "Dimension 2: ",
-            art_clicked$Dim_2,
-            "\n",
-            "Audience: ",
-            art_clicked$audience,
-            "\n",
-            "Author: ",
-            art_clicked$author,
-            "\n",
-            art_clicked$popup
-        )
-    }
-    else {
-        return("")
-    }
+        node_clicked$popup
 }
 
 
-# Define UI for application that draws a histogram
-ui <- navbarPage("Nelson et al",
+# Define UI with panels
+ui <- navbarPage("Nelson et al. Mapping the reproducibility crisis",
+                 tabPanel("Introduction",
+                          fluidPage(
+                              titlePanel("Mapping the discursive dimensions of the reproducibility crisis: A mixed methods analysis"),
+                              sidebarLayout(
+                                  mainPanel(p("Nicole C. Nelson, Kelsey Ichikawa, Julie Chung, and Momin M. Malik"),
+                                            h3("Abstract"),
+                                            p("To those involved in discussions about rigor, reproducibility, and replication in science, conversation about the “reproducibility crisis” appear ill-structured. Seemingly very different issues concerning the purity of reagents, accessibility of computational code, or misaligned incentives in academic research writ large are all collected up under this label. Prior work has attempted to address this problem by creating analytical definitions of reproducibility. We take a novel empirical, mixed methods approach to understanding variation in reproducibility discussions, using a combination of grounded theory and correspondence analysis to examine how a variety of authors narrate the story of the reproducibility crisis. Contrary to expectations, this analysis demonstrates that there is a clear thematic core to reproducibility discussions, centered on the incentive structure of science, the transparency of methods and data, and the need to reform academic publishing. However, we also identify three clusters of discussion that are distinct from the main body of articles: one focused on reagents, another on statistical methods, and a final cluster focused on the heterogeneity of the natural world. Although there are discursive differences between scientific and popular articles, we find no strong differences in how scientists and journalists write about the reproducibility crisis. Our findings demonstrate the value of using qualitative methods to identify the bounds and features of reproducibility discourse, and identify distinct vocabularies and constituencies that reformers should engage with to promote change."),
+                                            p("The full text of the article is available", a("test", href = "test"))),
+                                  sidebarPanel(p("Programming: Harald Kliems"))
+                              )
+                          )
+                     
+                 ),
                  tabPanel("Figure 5",
                           fluidPage(
                               # Application title
@@ -235,19 +216,21 @@ ui <- navbarPage("Nelson et al",
                               titlePanel("Correspondence analysis"),
                               sidebarLayout(
                                   mainPanel(
-                                      plotOutput("fig2_plot", height = 1000,
+                                      p(
+                                          "Click on any nodes or article points in the plot to get more information about them. Draw a rectangle and double-click in the plot area to zoom in."
+                                      ),
+                                      plotOutput("fig2_plot", height = 400,
                                                  click = "plot_click",
                                                  dblclick = "plot_dblclick",
                                                  brush = brushOpts(
                                                      id = "plot_brush",
                                                      resetOnNew = TRUE)),
-                                      p(
-                                          "Click on any nodes or article points in the plot to get more information about them."
-                                      )
+                                      p("Correspondence analysis biplot of 353 articles discussing reproducibility, analyzed for 29 themes. Articles that are close together have similar narrative profiles. The closer an article appears to the center of the plot, the more closely it resembles the mean profile for all articles. The further away a theme is from the origin, the more variation there is in how authors discuss that theme. The color of an article’s plotted point (a circle) indicates the main term used in the article, and the size of a theme’s plotted point (a square) represents the contribution of that theme to constructing the dimensions. The eight most contributing themes are labeled. Supplementary variables (not used to construct the dimensions) are labeled in red")
+                                      
                                   ),
                                   sidebarPanel(
                                       h3("Node Information"),
-                                      textOutput("node_info"),
+                                      uiOutput("node_info"),
                                       h3("Article information"),
                                       uiOutput("article_info")
                                   )
@@ -333,20 +316,6 @@ server <- function(input, output) {
     
     output$article_info <-
         renderText(create_output_articles(input$plot_click))
-    
-    output$hover_info <- renderText({
-        cat("input$plot_hover:\n")
-        str(input$plot_hover)
-    })
-    output$dblclick_info <- renderText({
-        cat("input$plot_dblclick:\n")
-        str(input$plot_dblclick)
-    })
-    output$brush_info <- renderText({
-        cat("input$plot_brush:\n")
-        str(input$plot_brush)
-    })
-    
 }
 
 # Run the application
