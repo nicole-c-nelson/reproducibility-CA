@@ -3,7 +3,7 @@ library(shiny)
 library(tidyverse)
 library(ggrepel)
 library(janitor)
-library(viridis)
+library(scico)
 
 
 # Figure 5
@@ -51,6 +51,7 @@ fig_5_plot <- function(x, y) {
             linetype = 2,
             show.legend = F
         ) +
+        scale_fill_scico_d(palette = "batlow", direction = 1) +
         geom_text_repel(
             data = filter(df_bootstrap_partial_points, Group == 1001 &
                               Node %in% x),
@@ -285,7 +286,7 @@ ui <- navbarPage("Mapping the reproducibility crisis",
                  tabPanel("Figure 5",
                           fluidPage(
                               # Application title
-                              titlePanel("Figure 5"),
+                              # titlePanel("Figure 5"),
                               
                               # Sidebar with a main panel for the plot and a sidebar for selecting nodes
                               sidebarLayout(
@@ -341,7 +342,7 @@ server <- function(input, output) {
             geom_vline(xintercept = 0,
                        linetype = 2,
                        color = "darkgrey") +
-            scale_color_viridis(discrete = TRUE, option = "D") +
+            scale_color_scico_d(palette = "acton") +
             geom_point(aes(color = term)) +
             geom_point(
                 data = df_CA_results_sup_var,
@@ -397,7 +398,7 @@ output$fig4_plot <- renderPlot({
     geom_hline(yintercept = 0, linetype=2, color="darkgrey")+
     geom_vline(xintercept = 0, linetype=2, color="darkgrey")+
     geom_point(aes(color = clust))+
-    scale_color_viridis(discrete = TRUE, option = "D", direction = -1)+
+    scale_color_scico_d(palette = "acton", direction = 1)+
     geom_point(data = df_CA_results_nodes, aes(Dim_1, Dim_3, size=Contrib_1_3), 
                shape = 22, 
                fill = "lightgrey",
